@@ -113,6 +113,141 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        /// <summary>
+        /// An offset square section revolved a full turn about its own centerline (the sketch's
+        /// Y axis), making a washer/tube: R=4, r=2, h=2 cm → volume 24π ≈ 75.4 cm³.
+        /// </summary>
+        public static InventorDocument RevolvePart()
+        {
+            var doc = new InventorDocument { DisplayName = "revolve", Kind = InventorDocumentKind.Part };
+            doc.Parameters.Add(new InventorParameter { Name = "side", Expression = "20 mm", Unit = "mm" });
+
+            var sketch = new InventorSketch { Name = "Section" };
+            const long l0 = 1, l1 = 2, l2 = 3, l3 = 4, axis = 5;
+            sketch.Curves.Add(Line(l0, 2, 0, 4, 0));   // bottom
+            sketch.Curves.Add(Line(l1, 4, 0, 4, 2));   // outer
+            sketch.Curves.Add(Line(l2, 4, 2, 2, 2));   // top
+            sketch.Curves.Add(Line(l3, 2, 2, 2, 0));   // inner
+            InventorCurve centerline = Line(axis, 0, 0, 0, 2);
+            centerline.Centerline = true;
+            sketch.Curves.Add(centerline);
+
+            Coincide(sketch, l0, InventorCurvePointRole.End, l1, InventorCurvePointRole.Start);
+            Coincide(sketch, l1, InventorCurvePointRole.End, l2, InventorCurvePointRole.Start);
+            Coincide(sketch, l2, InventorCurvePointRole.End, l3, InventorCurvePointRole.Start);
+            Coincide(sketch, l3, InventorCurvePointRole.End, l0, InventorCurvePointRole.Start);
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Horizontal, l0));
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Horizontal, l2));
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Vertical, l1));
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Vertical, l3));
+            sketch.Constraints.Add(Fix(l0, InventorCurvePointRole.Start));
+            sketch.Dimensions.Add(Distance(l0, InventorCurvePointRole.Start, l0, InventorCurvePointRole.End, "side"));
+            sketch.Dimensions.Add(Distance(l3, InventorCurvePointRole.Start, l3, InventorCurvePointRole.End, "side"));
+
+            // Pin the centerline (vertical on the Y axis, length "side").
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Vertical, axis));
+            sketch.Constraints.Add(Fix(axis, InventorCurvePointRole.Start));
+            sketch.Dimensions.Add(Distance(axis, InventorCurvePointRole.Start, axis, InventorCurvePointRole.End, "side"));
+
+            doc.Sketches.Add(sketch);
+            doc.Features.Add(new InventorRevolve
+            {
+                Name = "Revolve1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = InventorOperation.NewBody,
+                AngleRadians = 0, // full revolution
+            });
+            return doc;
+        }
+
+        /// <summary>Three boxes in a row: the box extrude patterned 3× along X. Volume 3 × 60 = 180 cm³.</summary>
+        public static InventorDocument RectPatternPart()
+        {
+            InventorDocument doc = MakeBox("rect-pattern", 0);
+            var pattern = new InventorRectangularPattern
+            {
+                Name = "Pattern1",
+                CountX = 3,
+                CountY = 1,
+                StepX = new double[] { 6, 0, 0 },
+                StepY = new double[] { 0, 0, 0 },
+            };
+            pattern.SourceFeatureIndices.Add(0); // the extrude
+            doc.Features.Add(pattern);
+            return doc;
+        }
+
+        /// <summary>The box mirrored across the YZ plane (x=0): two boxes. Volume 2 × 60 = 120 cm³.</summary>
+        public static InventorDocument MirrorPart()
+        {
+            InventorDocument doc = MakeBox("mirror", 0);
+            var mirror = new InventorMirror
+            {
+                Name = "Mirror1",
+                PlaneOrigin = new double[] { 0, 0, 0 },
+                PlaneNormal = new double[] { 1, 0, 0 },
+            };
+            mirror.SourceFeatureIndices.Add(0);
+            doc.Features.Add(mirror);
+            return doc;
+        }
+
+        /// <summary>An offset box patterned 4× around the Z axis. Volume 4 × 60 = 240 cm³.</summary>
+        public static InventorDocument CircularPatternPart()
+        {
+            InventorDocument doc = MakeBox("circular-pattern", 10);
+            var pattern = new InventorCircularPattern
+            {
+                Name = "Pattern1",
+                Count = 4,
+                AngleRadians = 0, // full revolution
+                AxisPoint = new double[] { 0, 0, 0 },
+                AxisDir = new double[] { 0, 0, 1 },
+            };
+            pattern.SourceFeatureIndices.Add(0);
+            doc.Features.Add(pattern);
+            return doc;
+        }
+
+        // A fully-constrained 4×3 cm rectangle offset dx in X, extruded 5 cm into a 60 cm³ box.
+        private static InventorDocument MakeBox(string name, double dx)
+        {
+            var doc = new InventorDocument { DisplayName = name, Kind = InventorDocumentKind.Part };
+            doc.Parameters.Add(new InventorParameter { Name = "width", Expression = "40 mm", Unit = "mm" });
+            doc.Parameters.Add(new InventorParameter { Name = "height", Expression = "30 mm", Unit = "mm" });
+
+            var sketch = new InventorSketch { Name = "Rectangle" };
+            const long l0 = 1, l1 = 2, l2 = 3, l3 = 4;
+            sketch.Curves.Add(Line(l0, dx, 0, dx + 4, 0));
+            sketch.Curves.Add(Line(l1, dx + 4, 0, dx + 4, 3));
+            sketch.Curves.Add(Line(l2, dx + 4, 3, dx, 3));
+            sketch.Curves.Add(Line(l3, dx, 3, dx, 0));
+            Coincide(sketch, l0, InventorCurvePointRole.End, l1, InventorCurvePointRole.Start);
+            Coincide(sketch, l1, InventorCurvePointRole.End, l2, InventorCurvePointRole.Start);
+            Coincide(sketch, l2, InventorCurvePointRole.End, l3, InventorCurvePointRole.Start);
+            Coincide(sketch, l3, InventorCurvePointRole.End, l0, InventorCurvePointRole.Start);
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Horizontal, l0));
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Horizontal, l2));
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Vertical, l1));
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Vertical, l3));
+            sketch.Constraints.Add(Fix(l0, InventorCurvePointRole.Start));
+            sketch.Dimensions.Add(Distance(l0, InventorCurvePointRole.Start, l0, InventorCurvePointRole.End, "width"));
+            sketch.Dimensions.Add(Distance(l3, InventorCurvePointRole.Start, l3, InventorCurvePointRole.End, "height"));
+            doc.Sketches.Add(sketch);
+
+            doc.Features.Add(new InventorExtrude
+            {
+                Name = "Extrude1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = InventorOperation.NewBody,
+                Direction = InventorExtentDirection.Positive,
+                Distance = 5,
+            });
+            return doc;
+        }
+
         /// <summary>A part carrying a single datum: a work plane offset 5 cm above XY.</summary>
         public static InventorDocument DatumPlanePart()
         {

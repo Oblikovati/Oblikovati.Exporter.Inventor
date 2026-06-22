@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
+using System.Collections.Generic;
 using Oblikovati.Exporter.Inventor.Model;
 using Oblikovati.Exporter.Inventor.Recipe;
 
@@ -73,14 +74,18 @@ namespace Oblikovati.Exporter.Inventor.Translate
             }
         }
 
+        // Map each IR feature index to its recipe index so patterns/mirror can remap their source
+        // program indices, skipping over any feature that was itself not translated.
         private static void TranslateFeatures(InventorDocument source, PartRecipe part, ExportReport report)
         {
             var translator = new FeatureTranslator(report);
-            foreach (InventorFeature feature in source.Features)
+            var sourceIndex = new Dictionary<int, int>();
+            for (int i = 0; i < source.Features.Count; i++)
             {
-                FeatureData? translated = translator.Translate(feature);
+                FeatureData? translated = translator.Translate(source.Features[i], sourceIndex);
                 if (translated != null)
                 {
+                    sourceIndex[i] = part.Features.Count;
                     part.Features.Add(translated);
                 }
             }

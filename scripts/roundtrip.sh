@@ -12,8 +12,17 @@ CLI="${1:?usage: roundtrip.sh <path-to-oblikovati-cli>}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="$(mktemp -d)"
 
-# Goldens whose solid volume (cm³) is asserted exactly against the real reader.
-declare -A EXPECT_VOL=( [box.opd]=60 )
+# Goldens whose solid volume (cm³) is asserted against the real reader, with a relative
+# tolerance per file (default 0.5%; a revolved tube reads ~0.6% under analytic 24π because
+# physicalProperties measures the faceted body, so it gets a wider band).
+declare -A EXPECT_VOL=(
+    [box.opd]=60
+    [revolve.opd]=75.398         # washer: 24π (R=4, r=2, h=2)
+    [rect-pattern.opd]=180        # 3 × 60
+    [mirror.opd]=120              # 2 × 60
+    [circular-pattern.opd]=240    # 4 × 60
+)
+declare -A EXPECT_TOL=( [revolve.opd]=0.02 )
 
 dotnet run --project "$ROOT/tools/GoldenGen" -c Release -- "$OUT"
 
@@ -41,8 +50,9 @@ for f in "$OUT"/*.opd "$OUT"/*.oad; do
     # 3) For solid-producing goldens, assert the exact volume in the real reader.
     want="${EXPECT_VOL[$name]:-}"
     if [ -n "$want" ]; then
+        tol="${EXPECT_TOL[$name]:-0.005}"
         got="$("$CLI" script run "$ROOT/scripts/volume.lua" --doc "$f" 2>/dev/null | tr -d '[:space:]')"
-        if awk -v g="$got" -v w="$want" 'BEGIN { d = g - w; if (d < 0) d = -d; exit !(g != "" && d <= w * 0.001) }'; then
+        if awk -v g="$got" -v w="$want" -v t="$tol" 'BEGIN { d = g - w; if (d < 0) d = -d; exit !(g != "" && d <= w * t) }'; then
             echo "OK   $name (volume ${got} cm³)"
         else
             echo "FAIL $name (volume ${got} cm³, want ${want})"

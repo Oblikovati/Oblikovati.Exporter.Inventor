@@ -79,6 +79,7 @@ namespace Oblikovati.Exporter.Inventor.Translate
                 case InventorCurveKind.Line:
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Start)));
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.End)));
+                    entity.Centerline = curve.Centerline ? true : (bool?)null;
                     break;
                 case InventorCurveKind.Circle:
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Center)));

@@ -65,6 +65,9 @@ namespace Oblikovati.Exporter.Inventor.Model
         public bool Ccw { get; set; }
 
         public bool Construction { get; set; }
+
+        /// <summary>A line that acts as an axis (excluded from profiles; used as a revolve axis).</summary>
+        public bool Centerline { get; set; }
     }
 
     /// <summary>A reference to one defining point of a curve (e.g. a line's end point).</summary>

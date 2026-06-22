@@ -110,11 +110,12 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<UserParameter> userParameters,
             IList<PlanarSketch>? sketches = null,
             IList<ExtrudeFeature>? extrudes = null,
-            IList<WorkPlane>? workPlanes = null)
+            IList<WorkPlane>? workPlanes = null,
+            IList<RevolveFeature>? revolves = null)
         {
             _parameters = new FakeParameters(new FakeUserParameters(userParameters));
             _sketches = new FakePlanarSketches(sketches ?? new List<PlanarSketch>());
-            _features = new FakePartFeatures(extrudes ?? new List<ExtrudeFeature>());
+            _features = new FakePartFeatures(extrudes ?? new List<ExtrudeFeature>(), revolves);
             _workPlanes = new FakeWorkPlanes(workPlanes ?? new List<WorkPlane>());
         }
 
@@ -155,12 +156,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<UserParameter> userParameters,
             IList<PlanarSketch>? sketches = null,
             IList<ExtrudeFeature>? extrudes = null,
-            IList<WorkPlane>? workPlanes = null)
+            IList<WorkPlane>? workPlanes = null,
+            IList<RevolveFeature>? revolves = null)
         {
             _displayName = displayName;
             _fullFileName = fullFileName;
             _units = units;
-            _definition = new FakePartComponentDefinition(userParameters, sketches, extrudes, workPlanes);
+            _definition = new FakePartComponentDefinition(userParameters, sketches, extrudes, workPlanes, revolves);
         }
 
         public override DocumentTypeEnum DocumentType => DocumentTypeEnum.kPartDocumentObject;
