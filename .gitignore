@@ -17,7 +17,3 @@ coverage*.xml
 
 # Local cross-repo checkout used by CI Job 2
 _oblikovati/
-
-# Autodesk Inventor interop is fetched transiently for real-assembly builds (Autodesk IP);
-# never commit it to the repo.
-Autodesk.Inventor.Interop.dll
