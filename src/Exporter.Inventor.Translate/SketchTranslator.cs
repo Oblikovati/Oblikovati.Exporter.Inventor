@@ -171,6 +171,19 @@ namespace Oblikovati.Exporter.Inventor.Translate
                 case InventorConstraintKind.Fix:
                     row.Points.Add(points.PointId(c.Points[0]));
                     return row;
+                case InventorConstraintKind.Symmetry:
+                    // Two points symmetric about a line (the engine's point-based symmetry).
+                    row.Points.Add(points.PointId(c.Points[0]));
+                    row.Points.Add(points.PointId(c.Points[1]));
+                    row.Curves.Add(entityIds[c.Curves[0]]);
+                    return row;
+                case InventorConstraintKind.Ground:
+                    foreach (InventorPointRef p in c.Points)
+                    {
+                        row.Points.Add(points.PointId(p));
+                    }
+
+                    return row;
                 default:
                     _report.Skip("sketch-constraint", c.Kind.ToString());
                     return null;
@@ -238,6 +251,8 @@ namespace Oblikovati.Exporter.Inventor.Translate
             InventorConstraintKind.PointOnLine => "pointOnLine",
             InventorConstraintKind.Midpoint => "midpoint",
             InventorConstraintKind.Fix => "fix",
+            InventorConstraintKind.Symmetry => "symmetry",
+            InventorConstraintKind.Ground => "ground",
             _ => kind.ToString(),
         };
 

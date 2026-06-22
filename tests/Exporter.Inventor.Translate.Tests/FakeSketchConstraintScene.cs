@@ -94,6 +94,24 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override object EntityTwo => _b;
     }
 
+    public sealed class FakeSymmetryConstraint : SymmetryConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        private readonly object _axis;
+        public FakeSymmetryConstraint(object a, object b, object axis) { _a = a; _b = b; _axis = axis; }
+        public override object EntityOne => _a;
+        public override object EntityTwo => _b;
+        public override object SymmetryLine => _axis;
+    }
+
+    public sealed class FakeGroundConstraint : GroundConstraint
+    {
+        private readonly object _entity;
+        public FakeGroundConstraint(object entity) => _entity = entity;
+        public override object Entity => _entity;
+    }
+
     public sealed class FakeTwoLineAngleDimConstraint : TwoLineAngleDimConstraint
     {
         private readonly object _a;

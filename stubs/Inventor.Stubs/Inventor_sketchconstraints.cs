@@ -86,6 +86,22 @@ namespace Inventor
         public virtual object EntityTwo => throw Stub.Error();
     }
 
+    /// <summary>Stub of a symmetry constraint: two entities symmetric about a line.</summary>
+    public class SymmetryConstraint : GeometricConstraint
+    {
+        public virtual object EntityOne => throw Stub.Error();
+
+        public virtual object EntityTwo => throw Stub.Error();
+
+        public virtual object SymmetryLine => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a ground (fix) constraint pinning an entity in place.</summary>
+    public class GroundConstraint : GeometricConstraint
+    {
+        public virtual object Entity => throw Stub.Error();
+    }
+
     /// <summary>Stub of a sketch's dimension-constraints collection.</summary>
     public class DimensionConstraints
     {
