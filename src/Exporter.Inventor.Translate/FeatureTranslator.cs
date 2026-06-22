@@ -41,6 +41,16 @@ namespace Oblikovati.Exporter.Inventor.Translate
                     return TranslateCircPattern(circ, sourceIndex);
                 case InventorMirror mirror:
                     return TranslateMirror(mirror, sourceIndex);
+                case InventorFillet fillet:
+                    return DressUpTranslator.Fillet(fillet);
+                case InventorChamfer chamfer:
+                    return DressUpTranslator.Chamfer(chamfer);
+                case InventorShell shell:
+                    return DressUpTranslator.Shell(shell);
+                case InventorDraft draft:
+                    return DressUpTranslator.Draft(draft);
+                case InventorHole hole:
+                    return DressUpTranslator.Hole(hole);
                 default:
                     _report.Skip("feature", feature.GetType().Name);
                     return null;

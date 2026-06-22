@@ -58,6 +58,10 @@ namespace Oblikovati.Exporter.Inventor.GoldenGen
             yield return InventorSampleParts.MirrorPart();
             yield return InventorSampleParts.CircularPatternPart();
             yield return InventorSampleParts.AssemblyDoc();
+            yield return InventorSampleParts.FilletedBoxPart();
+            yield return InventorSampleParts.ChamferedBoxPart();
+            yield return InventorSampleParts.ShelledBoxPart();
+            yield return InventorSampleParts.HoledBoxPart();
         }
     }
 }

@@ -210,6 +210,79 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        /// <summary>
+        /// The box with a 0.5 cm fillet rounding one vertical edge (at x=4, y=3, z 0→5). The edge
+        /// descriptor (midpoint + direction) binds to the recomputed body at recompute (ADR-0040).
+        /// Volume ≈ 60 − 0.5²(1−π/4)·5 ≈ 59.73 cm³.
+        /// </summary>
+        public static InventorDocument FilletedBoxPart()
+        {
+            InventorDocument doc = BoxPart();
+            doc.DisplayName = "filleted-box";
+            var fillet = new InventorFillet { Name = "Fillet1", RadiusCm = 0.5 };
+            fillet.Edges.Add(VerticalEdge(4, 3));
+            doc.Features.Add(fillet);
+            return doc;
+        }
+
+        /// <summary>The box with a 0.5 cm chamfer on the same vertical edge. Volume ≈ 60 − 0.5²/2·5.</summary>
+        public static InventorDocument ChamferedBoxPart()
+        {
+            InventorDocument doc = BoxPart();
+            doc.DisplayName = "chamfered-box";
+            var chamfer = new InventorChamfer { Name = "Chamfer1", DistanceCm = 0.5 };
+            chamfer.Edges.Add(VerticalEdge(4, 3));
+            doc.Features.Add(chamfer);
+            return doc;
+        }
+
+        /// <summary>
+        /// The box shelled to 0.5 cm walls with the top face (z=5) removed (open box). Cavity
+        /// 3×2×4.5 = 27 → volume 60 − 27 = 33 cm³.
+        /// </summary>
+        public static InventorDocument ShelledBoxPart()
+        {
+            InventorDocument doc = BoxPart();
+            doc.DisplayName = "shelled-box";
+            var shell = new InventorShell { Name = "Shell1", ThicknessCm = 0.5 };
+            shell.RemovedFaces.Add(TopFace());
+            doc.Features.Add(shell);
+            return doc;
+        }
+
+        /// <summary>
+        /// The box with a Ø1 cm blind hole, 2 cm deep, drilled into the top face. Volume
+        /// 60 − π·0.5²·2 ≈ 58.43 cm³.
+        /// </summary>
+        public static InventorDocument HoledBoxPart()
+        {
+            InventorDocument doc = BoxPart();
+            doc.DisplayName = "holed-box";
+            doc.Features.Add(new InventorHole
+            {
+                Name = "Hole1",
+                PlacementFace = TopFace(),
+                DiameterCm = 1,
+                DepthCm = 2,
+                ThroughAll = false,
+            });
+            return doc;
+        }
+
+        // The box's vertical edge at corner (x, y), running z 0→5: midpoint + Z direction.
+        private static InventorEdgeDescriptor VerticalEdge(double x, double y) => new InventorEdgeDescriptor
+        {
+            Midpoint = new double[] { x, y, 2.5 },
+            Direction = new double[] { 0, 0, 1 },
+        };
+
+        // The box's top face (z=5): centroid + outward +Z normal.
+        private static InventorFaceDescriptor TopFace() => new InventorFaceDescriptor
+        {
+            Centroid = new double[] { 2, 1.5, 5 },
+            Normal = new double[] { 0, 0, 1 },
+        };
+
         // A fully-constrained 4×3 cm rectangle offset dx in X, extruded 5 cm into a 60 cm³ box.
         private static InventorDocument MakeBox(string name, double dx)
         {

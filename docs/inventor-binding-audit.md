@@ -165,10 +165,20 @@ The `OnExecute` handler is a `void(NameValueMap)` method group, which binds to t
 both the stub and the real assembly. This is compile-verified only; the button's actual
 appearance/behaviour needs a live Inventor session to confirm.
 
-## Not yet exercised
+## Not yet exercised (live extraction)
 
-The pattern/mirror **translation** is complete and volume-round-tripped, but **live extraction**
-of those is deferred (M5b): their direction/axis/mirror-plane are typed `object` (a work axis,
-edge, face or work plane), and resolving each to a vector/plane is the focused follow-up. Also
-pending: Inventor's explicit sketch `GeometricConstraints`/`DimensionConstraints`, arcs/splines,
-sweep/loft, and dress-ups.
+Several feature **translations** are complete and volume-round-tripped (so the recipe path is
+proven), but their **live extraction** from a real part is deferred — each needs Inventor B-rep
+geometry evaluation or `object`-typed reference resolution that only matters when reading a live
+document:
+
+- **pattern / mirror** (M5b): the direction/axis/mirror-plane are typed `object` (a work axis,
+  edge, face or work plane) → resolve each to a vector/plane.
+- **dress-ups** (fillet/chamfer/shell/draft/hole, M8b): the translation emits ADR-0040 geometric
+  descriptors (edge midpoint+direction, face centroid+normal) and they **bind correctly in the
+  real reader** (volume round-trips), but extracting those descriptors from a live part needs the
+  Inventor edge/face evaluators (curve midpoint+tangent, surface centroid+normal) over the
+  fillet/chamfer/shell/hole feature selection sets.
+
+Also pending: Inventor's explicit sketch `GeometricConstraints`/`DimensionConstraints`,
+arcs/splines, and sweep/loft.
