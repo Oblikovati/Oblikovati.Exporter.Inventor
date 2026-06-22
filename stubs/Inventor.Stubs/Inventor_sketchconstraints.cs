@@ -46,6 +46,46 @@ namespace Inventor
         public virtual object EntityTwo => throw Stub.Error();
     }
 
+    /// <summary>Stub of a collinear constraint between two lines.</summary>
+    public class CollinearConstraint : GeometricConstraint
+    {
+        public virtual object EntityOne => throw Stub.Error();
+
+        public virtual object EntityTwo => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a concentric constraint between two circles/arcs.</summary>
+    public class ConcentricConstraint : GeometricConstraint
+    {
+        public virtual object EntityOne => throw Stub.Error();
+
+        public virtual object EntityTwo => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a tangent constraint between two curves.</summary>
+    public class TangentConstraint : GeometricConstraint
+    {
+        public virtual object EntityOne => throw Stub.Error();
+
+        public virtual object EntityTwo => throw Stub.Error();
+    }
+
+    /// <summary>Stub of an equal-length constraint between two lines.</summary>
+    public class EqualLengthConstraint : GeometricConstraint
+    {
+        public virtual object LineOne => throw Stub.Error();
+
+        public virtual object LineTwo => throw Stub.Error();
+    }
+
+    /// <summary>Stub of an equal-radius constraint between two circles/arcs.</summary>
+    public class EqualRadiusConstraint : GeometricConstraint
+    {
+        public virtual object EntityOne => throw Stub.Error();
+
+        public virtual object EntityTwo => throw Stub.Error();
+    }
+
     /// <summary>Stub of a sketch's dimension-constraints collection.</summary>
     public class DimensionConstraints
     {
@@ -81,6 +121,16 @@ namespace Inventor
     public class DiameterDimConstraint : DimensionConstraint
     {
         public virtual object Entity => throw Stub.Error();
+
+        public virtual Parameter Parameter => throw Stub.Error();
+    }
+
+    /// <summary>Stub of an angle dimension between two lines; its Parameter carries the expression.</summary>
+    public class TwoLineAngleDimConstraint : DimensionConstraint
+    {
+        public virtual object LineOne => throw Stub.Error();
+
+        public virtual object LineTwo => throw Stub.Error();
 
         public virtual Parameter Parameter => throw Stub.Error();
     }

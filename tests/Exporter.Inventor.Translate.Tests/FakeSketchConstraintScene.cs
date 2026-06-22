@@ -49,6 +49,67 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override object EntityTwo => _b;
     }
 
+    public sealed class FakeCollinearConstraint : CollinearConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        public FakeCollinearConstraint(object a, object b) { _a = a; _b = b; }
+        public override object EntityOne => _a;
+        public override object EntityTwo => _b;
+    }
+
+    public sealed class FakeConcentricConstraint : ConcentricConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        public FakeConcentricConstraint(object a, object b) { _a = a; _b = b; }
+        public override object EntityOne => _a;
+        public override object EntityTwo => _b;
+    }
+
+    public sealed class FakeTangentConstraint : TangentConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        public FakeTangentConstraint(object a, object b) { _a = a; _b = b; }
+        public override object EntityOne => _a;
+        public override object EntityTwo => _b;
+    }
+
+    public sealed class FakeEqualLengthConstraint : EqualLengthConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        public FakeEqualLengthConstraint(object a, object b) { _a = a; _b = b; }
+        public override object LineOne => _a;
+        public override object LineTwo => _b;
+    }
+
+    public sealed class FakeEqualRadiusConstraint : EqualRadiusConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        public FakeEqualRadiusConstraint(object a, object b) { _a = a; _b = b; }
+        public override object EntityOne => _a;
+        public override object EntityTwo => _b;
+    }
+
+    public sealed class FakeTwoLineAngleDimConstraint : TwoLineAngleDimConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        private readonly Parameter _parameter;
+        public FakeTwoLineAngleDimConstraint(object a, object b, string expression)
+        {
+            _a = a;
+            _b = b;
+            _parameter = new FakeExpressionParameter(expression);
+        }
+        public override object LineOne => _a;
+        public override object LineTwo => _b;
+        public override Parameter Parameter => _parameter;
+    }
+
     public sealed class FakeTwoPointDistanceDimConstraint : TwoPointDistanceDimConstraint
     {
         private readonly SketchPoint _a;
