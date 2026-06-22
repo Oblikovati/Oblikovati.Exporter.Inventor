@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Compile-only facade of the Inventor API subset the adapter and add-in call, so CI
+       can build without Inventor installed. The assembly is named "Autodesk.Inventor.Interop"
+       and types live in the "Inventor" namespace, so `using Inventor;` resolves identically
+       against this stub or the real interop assembly that ships with Inventor 2027. The real
+       release build references the genuine interop instead (see Exporter.Inventor.Inv.csproj,
+       UseInventorStubs=false). Members throw at runtime by design: nothing here ever runs
+       outside a live Inventor session. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Autodesk.Inventor.Interop</AssemblyName>
+    <RootNamespace>Inventor</RootNamespace>
+  </PropertyGroup>
+
+</Project>

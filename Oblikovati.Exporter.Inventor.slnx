@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Exporter.Inventor.Entry/Exporter.Inventor.Entry.csproj" />
+    <Project Path="src/Exporter.Inventor.Model/Exporter.Inventor.Model.csproj" />
+    <Project Path="src/Exporter.Inventor.Inv/Exporter.Inventor.Inv.csproj" />
+    <Project Path="src/Exporter.Inventor.Recipe/Exporter.Inventor.Recipe.csproj" />
+    <Project Path="src/Exporter.Inventor.Translate/Exporter.Inventor.Translate.csproj" />
+  </Folder>
+  <Folder Name="/stubs/">
+    <Project Path="stubs/Inventor.Stubs/Inventor.Stubs.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Exporter.Inventor.Translate.Tests/Exporter.Inventor.Translate.Tests.csproj" />
+  </Folder>
+</Solution>
