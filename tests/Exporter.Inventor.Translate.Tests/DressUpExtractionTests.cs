@@ -111,6 +111,38 @@ namespace Oblikovati.Exporter.Inventor.Tests
             Assert.False(h.ThroughAll);
             Assert.Equal(new double[] { 2, 1.5, 5 }, h.PlacementFace.Centroid);
             Assert.Equal(new double[] { 0, 0, 1 }, h.PlacementFace.Normal);
+            Assert.Null(h.Center); // no centre point -> drilled at the face centroid
+        }
+
+        [Fact]
+        public void Hole_reads_its_explicit_drill_center()
+        {
+            var holes = new List<HoleFeature>
+            {
+                new FakeHoleFeature("Hole1", 1, 2, throughAll: false, placementFace: TopFace(),
+                    centers: new[] { new double[] { 1, 2, 5 } }),
+            };
+
+            var h = Assert.IsType<InventorHole>(Extract(holes: holes).Features.Last());
+
+            Assert.Equal(new double[] { 1, 2, 5 }, h.Center);
+        }
+
+        [Fact]
+        public void Hole_with_several_center_points_expands_to_one_hole_each()
+        {
+            var holes = new List<HoleFeature>
+            {
+                new FakeHoleFeature("Holes", 1, 2, throughAll: true, placementFace: TopFace(),
+                    centers: new[] { new double[] { 1, 1, 5 }, new double[] { 3, 1, 5 }, new double[] { 1, 2, 5 } }),
+            };
+
+            var ir = Extract(holes: holes);
+            var emitted = ir.Features.OfType<InventorHole>().ToList();
+
+            Assert.Equal(3, emitted.Count);
+            Assert.All(emitted, e => Assert.True(e.ThroughAll));
+            Assert.Equal(new double[] { 3, 1, 5 }, emitted[1].Center);
         }
     }
 }

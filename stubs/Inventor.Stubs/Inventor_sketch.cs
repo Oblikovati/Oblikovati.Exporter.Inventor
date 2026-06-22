@@ -228,6 +228,9 @@ namespace Inventor
     public class SketchPoint
     {
         public virtual Point2d Geometry => throw Stub.Error();
+
+        /// <summary>The point's model-space 3D position (used to read a hole's drill centre).</summary>
+        public virtual Point Geometry3d => throw Stub.Error();
     }
 
     /// <summary>Stub of a transient 2D point (cm).</summary>

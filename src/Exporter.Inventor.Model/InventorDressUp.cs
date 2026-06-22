@@ -68,5 +68,8 @@ namespace Oblikovati.Exporter.Inventor.Model
         public double DepthCm { get; set; }
 
         public bool ThroughAll { get; set; }
+
+        /// <summary>The drill centre in model space (cm). Null means drill at the face centroid.</summary>
+        public double[]? Center { get; set; }
     }
 }

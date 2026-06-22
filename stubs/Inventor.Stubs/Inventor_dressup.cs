@@ -157,6 +157,15 @@ namespace Inventor
         public virtual PartFeatureExtentEnum ExtentType => throw Stub.Error();
 
         public virtual HolePlacementDefinition PlacementDefinition => throw Stub.Error();
+
+        /// <summary>The drill centre points of every hole this feature places (any placement type).</summary>
+        public virtual ObjectCollection HoleCenterPoints => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a work point; Point is its model-space 3D position.</summary>
+    public class WorkPoint
+    {
+        public virtual Point Point => throw Stub.Error();
     }
 
     /// <summary>Base of the hole-placement definitions (the concrete kind keys the placement face).</summary>

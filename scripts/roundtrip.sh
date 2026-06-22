@@ -25,6 +25,7 @@ declare -A EXPECT_VOL=(
     [chamfered-box.opd]=59.375     # 60 − 0.5²/2·5
     [shelled-box.opd]=33           # 60 − 3×2×4.5 cavity (top face descriptor bound)
     [holed-box.opd]=58.43          # 60 − π·0.5²·2 (placement-face descriptor bound)
+    [offset-holed-box.opd]=58.43   # same bore, drilled at an explicit off-centre point
     [sweep.opd]=31.42              # π·1²·10 cylinder (circle profile swept along +Z)
     [loft.opd]=31.42               # π·1²·10 cylinder (loft between two coaxial circles)
     [arc-extrude.opd]=31.42        # 10π half-cylinder (half-disc with an arc, extruded)
@@ -32,7 +33,7 @@ declare -A EXPECT_VOL=(
 # Curved-surface results read the faceted body, so they get a wider band.
 declare -A EXPECT_TOL=(
     [revolve.opd]=0.02 [filleted-box.opd]=0.02 [holed-box.opd]=0.02 [sweep.opd]=0.02 [loft.opd]=0.02
-    [arc-extrude.opd]=0.02
+    [arc-extrude.opd]=0.02 [offset-holed-box.opd]=0.02
 )
 # Goldens validated by the open check only (no DOF assertion): an ellipse cannot be fully
 # constrained — Oblikovati has no ellipse radius dimension to pin its radii (as with arc radii).

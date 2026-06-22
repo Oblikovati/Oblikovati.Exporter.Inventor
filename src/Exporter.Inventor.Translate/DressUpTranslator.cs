@@ -50,6 +50,7 @@ namespace Oblikovati.Exporter.Inventor.Translate
                 ThroughAll = hole.ThroughAll ? true : (bool?)null,
                 Type = "drilled",
                 GeomFace = FaceRef(hole.PlacementFace),
+                Center = hole.Center == null ? null : (double[])hole.Center.Clone(),
             };
             return new FeatureData { Kind = "hole", Name = NameOf(hole), Hole = payload };
         }
