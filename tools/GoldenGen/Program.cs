@@ -48,6 +48,8 @@ namespace Oblikovati.Exporter.Inventor.GoldenGen
         {
             yield return InventorSampleParts.EmptyPart();
             yield return InventorSampleParts.ParametricPart();
+            yield return InventorSampleParts.RectanglePart();
+            yield return InventorSampleParts.CirclePart();
         }
     }
 }

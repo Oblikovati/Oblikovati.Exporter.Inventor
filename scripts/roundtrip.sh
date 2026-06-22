@@ -18,12 +18,20 @@ status=0
 for f in "$OUT"/*.opd "$OUT"/*.oad; do
     [ -e "$f" ] || continue
     name="$(basename "$f")"
-    # The file loads and recomputes in the real reader. Sketch/feature fidelity checks
-    # (DOF 0, closed profiles) are added with the sketch milestone.
-    if "$CLI" open "$f" >/dev/null; then
+    # 1) The file loads and recomputes in the real reader.
+    if ! "$CLI" open "$f" >/dev/null; then
+        echo "FAIL $name (open)"
+        status=1
+        continue
+    fi
+    # 2) For parts, every sketch is fully constrained (DOF 0) with a closed profile.
+    #    Assemblies (.oad) have no part sketch context, so the open check suffices.
+    if [[ "$f" == *.oad ]]; then
+        echo "OK   $name"
+    elif "$CLI" script run "$ROOT/scripts/validate_sketches.lua" --doc "$f" >/dev/null 2>&1; then
         echo "OK   $name"
     else
-        echo "FAIL $name (open)"
+        echo "FAIL $name (sketch validation)"
         status=1
     fi
 done

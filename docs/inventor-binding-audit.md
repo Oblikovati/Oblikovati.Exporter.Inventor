@@ -63,7 +63,36 @@ and fixed:
 The stub was updated to mirror these real shapes (`UserParameters[object]` → `UserParameter`
 with `get_Units()`), so the stub-mode build and the real-mode build stay consistent.
 
+## ✅ Sketch read surface (real-compile-verified on 2025/2026/2027)
+
+The M3 sketch extractor compiles clean against all three genuine interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `PartComponentDefinition.Sketches` | `PlanarSketches` (get) |
+| `PlanarSketches[i]` / `.Count` | `PlanarSketch this[object Index]` (1-based) / `int` |
+| `PlanarSketch.Name` | `string` |
+| `PlanarSketch.SketchLines` / `.SketchCircles` | `SketchLines` / `SketchCircles` |
+| `PlanarSketch.OriginPointGeometry` | `Point` (sketch origin, model space) |
+| `PlanarSketch.AxisEntityGeometry` | `Line` (sketch X axis) |
+| `PlanarSketch.PlanarEntityGeometry` | `Plane` (its `Normal` completes the frame) |
+| `SketchLines[i]` / `SketchCircles[i]` | `SketchLine this[int]` / `SketchCircle this[int]` (1-based, **int**-indexed unlike `PlanarSketches`) |
+| `SketchLine.StartSketchPoint` / `.EndSketchPoint` / `.Construction` | `SketchPoint` / `SketchPoint` / `bool` |
+| `SketchCircle.CenterSketchPoint` / `.Radius` / `.Construction` | `SketchPoint` / `double` / `bool` |
+| `SketchPoint.Geometry` | `Point2d` (sketch coords, cm) |
+| `Point2d.X/.Y`, `Point.X/.Y/.Z` | `double` |
+| `Plane.Normal`, `Line.Direction` | `UnitVector` |
+| `UnitVector.X/.Y/.Z`, `UnitVector.CrossProduct(UnitVector)` | `double`, `UnitVector` (used for Y = normal × X) |
+
+Note the indexer asymmetry the real compile pinned: `PlanarSketches` is **object**-indexed while
+`SketchLines`/`SketchCircles` are **int**-indexed (both 1-based). The plane frame is taken
+directly from Inventor (origin/axis/normal), not fitted, and 2D points are read in centimetres —
+Inventor's database unit, which is the recipe unit, so coordinates pass through unscaled.
+
 ## Not yet exercised
 
-Sketches, features, work features, patterns/mirror, and the assembly occurrence tree are added
-in later milestones; their builders will be audited the same way as they land.
+Inventor's explicit geometric constraints and dimensions (read from `GeometricConstraints` /
+`DimensionConstraints`), arcs/splines, features, work features, patterns/mirror, and the assembly
+occurrence tree are added in later milestones; their builders will be audited the same way as
+they land. The M3 extractor reads line/circle geometry with inferred coincidence; the explicit
+constraints/dimensions are the parametric refinement.

@@ -27,6 +27,7 @@ namespace Oblikovati.Exporter.Inventor.Translate
             part.Units.Length = source.LengthUnit;
             part.Units.Angle = source.AngleUnit;
             TranslateParameters(source, part);
+            TranslateSketches(source, part, report);
 
             return new OblikovatiDocument
             {
@@ -46,6 +47,19 @@ namespace Oblikovati.Exporter.Inventor.Translate
                     Kind = "model",
                     Expression = p.Expression,
                 });
+            }
+        }
+
+        // Sketches, their points and entities share one id space (matches the Go codec, where a
+        // sketch's id precedes its points' and entities' ids), so one allocator threads through.
+        private static void TranslateSketches(InventorDocument source, PartRecipe part, ExportReport report)
+        {
+            var ids = new IdAllocator();
+            var translator = new SketchTranslator(ids, report);
+            foreach (InventorSketch sketch in source.Sketches)
+            {
+                int sketchId = ids.Next();
+                part.Sketches.Add(translator.Translate(sketch, sketchId));
             }
         }
     }
