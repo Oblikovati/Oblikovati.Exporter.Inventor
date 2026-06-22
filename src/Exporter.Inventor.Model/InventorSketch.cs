@@ -35,6 +35,7 @@ namespace Oblikovati.Exporter.Inventor.Model
         Circle,
         Arc,
         Spline,
+        Ellipse,
     }
 
     /// <summary>
@@ -82,6 +83,15 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>Whether a spline interpolates its points (fit) rather than being a control polygon.</summary>
         public bool Fit { get; set; }
+
+        /// <summary>Ellipse only: the major-axis direction (2D unit vector).</summary>
+        public double[] MajorAxis { get; set; } = { 1, 0 };
+
+        /// <summary>Ellipse only: the major semi-axis length (cm).</summary>
+        public double MajorRadius { get; set; }
+
+        /// <summary>Ellipse only: the minor semi-axis length (cm).</summary>
+        public double MinorRadius { get; set; }
     }
 
     /// <summary>

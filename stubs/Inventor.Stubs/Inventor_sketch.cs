@@ -29,6 +29,8 @@ namespace Inventor
 
         public virtual SketchControlPointSplines SketchControlPointSplines => throw Stub.Error();
 
+        public virtual SketchEllipses SketchEllipses => throw Stub.Error();
+
         public virtual GeometricConstraints GeometricConstraints => throw Stub.Error();
 
         public virtual DimensionConstraints DimensionConstraints => throw Stub.Error();
@@ -153,6 +155,36 @@ namespace Inventor
         public virtual bool IsClosed => throw Stub.Error();
 
         public virtual bool Construction => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the sketch-ellipses collection (int-indexed, 1-based).</summary>
+    public class SketchEllipses
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual SketchEllipse this[int index] => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one full sketch ellipse: center + major-axis direction + the two radii.</summary>
+    public class SketchEllipse
+    {
+        public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
+
+        public virtual UnitVector2d MajorAxisVector => throw Stub.Error();
+
+        public virtual double MajorRadius => throw Stub.Error();
+
+        public virtual double MinorRadius => throw Stub.Error();
+
+        public virtual bool Construction => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a transient 2D unit vector (the ellipse major-axis direction).</summary>
+    public class UnitVector2d
+    {
+        public virtual double X => throw Stub.Error();
+
+        public virtual double Y => throw Stub.Error();
     }
 
     /// <summary>Stub of one sketch point; its 2D geometry is in sketch space (cm).</summary>

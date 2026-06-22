@@ -413,6 +413,26 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        /// <summary>A full ellipse (major axis along X, radii 4×2 cm) with a fixed centre.</summary>
+        public static InventorDocument EllipsePart()
+        {
+            var doc = new InventorDocument { DisplayName = "ellipse", Kind = InventorDocumentKind.Part };
+            var sketch = new InventorSketch { Name = "Ellipse" };
+            const long e0 = 1;
+            sketch.Curves.Add(new InventorCurve
+            {
+                Id = e0,
+                Kind = InventorCurveKind.Ellipse,
+                Center = new double[] { 0, 0 },
+                MajorAxis = new double[] { 1, 0 },
+                MajorRadius = 4,
+                MinorRadius = 2,
+            });
+            sketch.Constraints.Add(Fix(e0, InventorCurvePointRole.Center));
+            doc.Sketches.Add(sketch);
+            return doc;
+        }
+
         // A fixed circle of the given radius (cm) on a plane offset originZ along Z, with a
         // diameter dimension. The 2D center is the origin, so it sits at (0,0,originZ) in model space.
         private static InventorSketch CircleSketch(string name, double radius, double originZ)

@@ -55,6 +55,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractArcs(sketch.SketchArcs, result, curveIds, pointRefs, ref nextId);
             ExtractSplines(sketch.SketchSplines, result, curveIds, pointRefs, ref nextId);
             ExtractControlPointSplines(sketch.SketchControlPointSplines, result, curveIds, pointRefs, ref nextId);
+            ExtractEllipses(sketch.SketchEllipses, result, curveIds, pointRefs, ref nextId);
 
             InferCoincidences(result);
             ExtractConstraints(sketch.GeometricConstraints, result, curveIds);
@@ -181,6 +182,30 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
                 result.Curves.Add(curve);
                 curveIds[spline] = id;
+            }
+        }
+
+        private static void ExtractEllipses(
+            SketchEllipses ellipses, InventorSketch result,
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs, ref long nextId)
+        {
+            for (int i = 1; i <= ellipses.Count; i++)
+            {
+                SketchEllipse ellipse = ellipses[i];
+                long id = nextId++;
+                UnitVector2d major = ellipse.MajorAxisVector;
+                result.Curves.Add(new InventorCurve
+                {
+                    Id = id,
+                    Kind = InventorCurveKind.Ellipse,
+                    Center = P2(ellipse.CenterSketchPoint.Geometry),
+                    MajorAxis = new[] { major.X, major.Y },
+                    MajorRadius = ellipse.MajorRadius,
+                    MinorRadius = ellipse.MinorRadius,
+                    Construction = ellipse.Construction,
+                });
+                curveIds[ellipse] = id;
+                pointRefs[ellipse.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
             }
         }
 

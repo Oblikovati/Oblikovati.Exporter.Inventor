@@ -82,6 +82,15 @@ namespace Oblikovati.Exporter.Inventor.Recipe
         [YamlMember(Alias = "radius", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public double? Radius { get; set; }
 
+        [YamlMember(Alias = "majorAxis", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public double[]? MajorAxis { get; set; }
+
+        [YamlMember(Alias = "majorRadius", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double? MajorRadius { get; set; }
+
+        [YamlMember(Alias = "minorRadius", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double? MinorRadius { get; set; }
+
         [YamlMember(Alias = "ccw", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public bool? Ccw { get; set; }
 
