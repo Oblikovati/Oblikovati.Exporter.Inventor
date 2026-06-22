@@ -257,6 +257,21 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     case PerpendicularConstraint pp:
                         AddBetweenCurves(result, InventorConstraintKind.Perpendicular, curveIds, pp.EntityOne, pp.EntityTwo);
                         break;
+                    case CollinearConstraint col:
+                        AddBetweenCurves(result, InventorConstraintKind.Collinear, curveIds, col.EntityOne, col.EntityTwo);
+                        break;
+                    case ConcentricConstraint con:
+                        AddBetweenCurves(result, InventorConstraintKind.Concentric, curveIds, con.EntityOne, con.EntityTwo);
+                        break;
+                    case TangentConstraint tan:
+                        AddBetweenCurves(result, InventorConstraintKind.Tangent, curveIds, tan.EntityOne, tan.EntityTwo);
+                        break;
+                    case EqualLengthConstraint eq:
+                        AddBetweenCurves(result, InventorConstraintKind.EqualLength, curveIds, eq.LineOne, eq.LineTwo);
+                        break;
+                    case EqualRadiusConstraint er:
+                        AddBetweenCurves(result, InventorConstraintKind.EqualRadius, curveIds, er.EntityOne, er.EntityTwo);
+                        break;
                 }
             }
         }
@@ -277,6 +292,9 @@ namespace Oblikovati.Exporter.Inventor.Inv
                         break;
                     case DiameterDimConstraint dia:
                         AddCurveDimension(result, InventorDimensionKind.Diameter, curveIds, dia.Entity, dia.Parameter);
+                        break;
+                    case TwoLineAngleDimConstraint ang:
+                        AddAngleDimension(result, curveIds, ang);
                         break;
                 }
             }
@@ -330,6 +348,18 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 var dim = new InventorSketchDimension { Kind = kind, Expression = parameter.Expression };
                 dim.Curves.Add(id);
+                result.Dimensions.Add(dim);
+            }
+        }
+
+        private static void AddAngleDimension(
+            InventorSketch result, IDictionary<object, long> curveIds, TwoLineAngleDimConstraint a)
+        {
+            if (curveIds.TryGetValue(a.LineOne, out long ida) && curveIds.TryGetValue(a.LineTwo, out long idb))
+            {
+                var dim = new InventorSketchDimension { Kind = InventorDimensionKind.Angle, Expression = a.Parameter.Expression };
+                dim.Curves.Add(ida);
+                dim.Curves.Add(idb);
                 result.Dimensions.Add(dim);
             }
         }

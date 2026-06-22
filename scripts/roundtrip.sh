@@ -36,7 +36,7 @@ declare -A EXPECT_TOL=(
 )
 # Goldens validated by the open check only (no DOF assertion): an ellipse cannot be fully
 # constrained — Oblikovati has no ellipse radius dimension to pin its radii (as with arc radii).
-declare -A OPEN_ONLY=( [ellipse.opd]=1 [elliptical-arc.opd]=1 )
+declare -A OPEN_ONLY=( [ellipse.opd]=1 [elliptical-arc.opd]=1 [constraint-sampler.opd]=1 )
 
 dotnet run --project "$ROOT/tools/GoldenGen" -c Release -- "$OUT"
 

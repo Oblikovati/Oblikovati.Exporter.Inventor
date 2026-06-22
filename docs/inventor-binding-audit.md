@@ -100,9 +100,11 @@ Explicit constraints/dimensions are also read (coincidence stays inferred from m
 |---|---|
 | `PlanarSketch.GeometricConstraints` / `.DimensionConstraints` | the two collections (int-indexed, 1-based) |
 | `HorizontalConstraint`/`VerticalConstraint.Entity` | `SketchEntity` (cast `SketchLine`) |
-| `ParallelConstraint`/`PerpendicularConstraint.EntityOne`/`.EntityTwo` | `SketchEntity` (cast `SketchLine`) |
+| `ParallelConstraint`/`PerpendicularConstraint`/`CollinearConstraint`/`ConcentricConstraint`/`TangentConstraint`/`EqualRadiusConstraint`.`EntityOne`/`.EntityTwo` | the two curve operands |
+| `EqualLengthConstraint.LineOne`/`.LineTwo` | the two line operands |
 | `TwoPointDistanceDimConstraint.PointOne`/`.PointTwo` / `.Parameter` | `SketchPoint` / `Parameter` |
 | `RadiusDimConstraint`/`DiameterDimConstraint.Entity` / `.Parameter` | `SketchEntity` (cast `SketchCircle`) / `Parameter` |
+| `TwoLineAngleDimConstraint.LineOne`/`.LineTwo` / `.Parameter` | the two lines + the angle expression |
 | `Parameter.Expression` | `string` (the dimension's driving expression, e.g. "width") |
 
 Constraints/dimensions are matched by their concrete COM type (pattern matching), and their
@@ -268,7 +270,8 @@ tessellation is a later step. Both are also volume-round-tripped (a ~31.4 cm³ c
 - **hole placement variants**: sketch-, linear-, and concentric-placed holes are skipped; only a
   point placement whose `Direction` is a planar `Face` is read.
 
-Also pending: less-common sketch constraints (tangent/concentric/collinear/equal) + angle
-dimensions; and arc/spline sweep paths. Ellipses and elliptical arcs round-trip by the open check
+Also pending: symmetry/ground constraints and explicit coincidence (coincidence is inferred from
+meeting endpoints, which covers profile closure); and arc/spline sweep paths. Ellipses and
+elliptical arcs round-trip by the open check
 only — Oblikovati has no ellipse radius dimension, so they cannot be driven to DOF 0 (same
 limitation as an arc radius).

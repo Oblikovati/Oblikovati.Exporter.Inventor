@@ -413,6 +413,57 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        /// <summary>
+        /// A sampler that exercises every remaining geometric constraint and the angle dimension,
+        /// with geometry that satisfies them: two collinear equal-length lines, two concentric
+        /// equal-radius circles, a line tangent to a circle, and a 45° angle dimension. Validated
+        /// by the open check (it is not a single closed profile).
+        /// </summary>
+        public static InventorDocument ConstraintSamplerPart()
+        {
+            var doc = new InventorDocument { DisplayName = "constraint-sampler", Kind = InventorDocumentKind.Part };
+            doc.Parameters.Add(new InventorParameter { Name = "ang", Expression = "45 deg", Unit = "deg" });
+            var sketch = new InventorSketch { Name = "Sampler" };
+            const long l0 = 1, l1 = 2, c0 = 3, c1 = 4, lt = 5, ct = 6, la = 7;
+            sketch.Curves.Add(Line(l0, 0, 0, 2, 0));
+            sketch.Curves.Add(Line(l1, 3, 0, 5, 0));         // collinear + equal length to l0
+            sketch.Curves.Add(Circle(c0, 0, 5, 1));
+            sketch.Curves.Add(Circle(c1, 0, 5, 1));          // concentric + equal radius to c0
+            sketch.Curves.Add(Line(lt, 10, 1, 14, 1));
+            sketch.Curves.Add(Circle(ct, 12, 3, 2));         // tangent: line y=1 is 2 below centre
+            sketch.Curves.Add(Line(la, 0, 0, 2, 2));         // 45° to l0
+
+            sketch.Constraints.Add(Between(InventorConstraintKind.Collinear, l0, l1));
+            sketch.Constraints.Add(Between(InventorConstraintKind.EqualLength, l0, l1));
+            sketch.Constraints.Add(Between(InventorConstraintKind.Concentric, c0, c1));
+            sketch.Constraints.Add(Between(InventorConstraintKind.EqualRadius, c0, c1));
+            sketch.Constraints.Add(Between(InventorConstraintKind.Tangent, lt, ct));
+
+            var angle = new InventorSketchDimension { Kind = InventorDimensionKind.Angle, Expression = "ang" };
+            angle.Curves.Add(l0);
+            angle.Curves.Add(la);
+            sketch.Dimensions.Add(angle);
+
+            doc.Sketches.Add(sketch);
+            return doc;
+        }
+
+        private static InventorCurve Circle(long id, double cx, double cy, double radius) => new InventorCurve
+        {
+            Id = id,
+            Kind = InventorCurveKind.Circle,
+            Center = new[] { cx, cy },
+            Radius = radius,
+        };
+
+        private static InventorSketchConstraint Between(InventorConstraintKind kind, long a, long b)
+        {
+            var c = new InventorSketchConstraint { Kind = kind };
+            c.Curves.Add(a);
+            c.Curves.Add(b);
+            return c;
+        }
+
         /// <summary>A full ellipse (major axis along X, radii 4×2 cm) with a fixed centre.</summary>
         public static InventorDocument EllipsePart()
         {
