@@ -36,6 +36,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 var part = (PartDocument)doc;
                 ExtractUserParameters(part, ir);
                 SketchExtractor.Extract(part, ir);
+                FeatureExtractor.Extract(part, ir);
             }
             return ir;
         }

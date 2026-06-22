@@ -21,6 +21,10 @@ namespace Inventor
         public virtual Parameters Parameters => throw Stub.Error();
 
         public virtual PlanarSketches Sketches => throw Stub.Error();
+
+        public virtual PartFeatures Features => throw Stub.Error();
+
+        public virtual WorkPlanes WorkPlanes => throw Stub.Error();
     }
 
     /// <summary>

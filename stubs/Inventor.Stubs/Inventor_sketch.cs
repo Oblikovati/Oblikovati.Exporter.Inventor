@@ -105,9 +105,11 @@ namespace Inventor
         public virtual UnitVector CrossProduct(UnitVector other) => throw Stub.Error();
     }
 
-    /// <summary>Stub of a transient plane (its normal completes the sketch frame).</summary>
+    /// <summary>Stub of a transient plane (its root point + normal place a work plane).</summary>
     public class Plane
     {
+        public virtual Point RootPoint => throw Stub.Error();
+
         public virtual UnitVector Normal => throw Stub.Error();
     }
 

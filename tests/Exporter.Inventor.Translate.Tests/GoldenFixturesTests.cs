@@ -58,5 +58,24 @@ namespace Oblikovati.Exporter.Inventor.Tests
             Assert.Contains("kind: circle", yaml);
             Assert.Contains("kind: diameter", yaml);
         }
+
+        [Fact]
+        public void Box_part_emits_an_extrude_feature_over_its_sketch()
+        {
+            string yaml = Emit(InventorSampleParts.BoxPart());
+
+            Assert.Contains("features:", yaml);
+            Assert.Contains("kind: extrude", yaml);
+            Assert.Contains("distance: 5", yaml);
+        }
+
+        [Fact]
+        public void Datum_plane_part_emits_a_fixed_frame_work_feature()
+        {
+            string yaml = Emit(InventorSampleParts.DatumPlanePart());
+
+            Assert.Contains("workFeatures:", yaml);
+            Assert.Contains("kind: fixed-frame", yaml);
+        }
     }
 }
