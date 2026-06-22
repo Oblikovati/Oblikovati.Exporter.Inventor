@@ -131,11 +131,28 @@ The M5 revolve extractor compiles clean against all three genuine interops. Memb
 The revolve axis is read from the strongly-typed `_AxisEntity` (a `SketchLine`) and added to the
 profile sketch as a centerline curve, so Oblikovati revolves about the sketch's own centerline.
 
+## ✅ Assembly read surface (real-compile-verified on 2025/2026/2027)
+
+The M6 component extractor compiles clean against all three genuine interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `AssemblyDocument.ComponentDefinition` | `AssemblyComponentDefinition` |
+| `AssemblyComponentDefinition.Occurrences` | `ComponentOccurrences` |
+| `ComponentOccurrences[i]` / `.Count` | `ComponentOccurrence this[int Index]` (1-based) / `int` |
+| `ComponentOccurrence.Name` / `.Definition` / `.Transformation` | `string` / `ComponentDefinition` / `Matrix` |
+| `ComponentDefinition.Document` | `object` (cast to `_Document`; the referenced part/assembly) |
+| `Matrix.get_Cell(Row, Col)` | `double` (1-based; the COM `Cell` parameterized property) |
+
+The placement is read **cell by cell** via `get_Cell(row, col)` (rotation = cells 1..3 × 1..3,
+translation = cells 1..3 × 4) rather than `GetMatrixData`, whose array ordering is undocumented
+(row- vs column-major) — `get_Cell` is layout-independent. Components shared by several
+occurrences are de-duplicated by full file name so each prototype is exported once.
+
 ## Not yet exercised
 
-The pattern/mirror **translation** (rectangular/circular pattern, mirror) is complete and
-volume-round-tripped, but **live extraction** of those is deferred: in the Inventor API the
-direction/axis/mirror-plane are typed `object` (a work axis, edge, face or work plane), and
-resolving each to a vector/plane is the focused follow-up (M5b). Also pending: Inventor's explicit
-sketch `GeometricConstraints`/`DimensionConstraints`, arcs/splines, sweep/loft, dress-ups, and the
-assembly occurrence tree.
+The pattern/mirror **translation** is complete and volume-round-tripped, but **live extraction**
+of those is deferred (M5b): their direction/axis/mirror-plane are typed `object` (a work axis,
+edge, face or work plane), and resolving each to a vector/plane is the focused follow-up. Also
+pending: Inventor's explicit sketch `GeometricConstraints`/`DimensionConstraints`, arcs/splines,
+sweep/loft, and dress-ups.

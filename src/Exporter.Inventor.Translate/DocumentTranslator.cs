@@ -24,6 +24,12 @@ namespace Oblikovati.Exporter.Inventor.Translate
         /// </summary>
         public OblikovatiDocument Translate(InventorDocument source, ExportReport report)
         {
+            if (source.Kind != InventorDocumentKind.Part)
+            {
+                throw new System.NotSupportedException(
+                    $"document kind '{source.Kind}' is not a part; assemblies go through DocumentExporter");
+            }
+
             var part = new PartRecipe();
             part.Units.Length = source.LengthUnit;
             part.Units.Angle = source.AngleUnit;
@@ -34,9 +40,32 @@ namespace Oblikovati.Exporter.Inventor.Translate
 
             return new OblikovatiDocument
             {
-                DocumentType = (int)source.Kind,
+                DocumentType = (int)InventorDocumentKind.Part,
                 DisplayName = source.DisplayName,
                 Model = part,
+            };
+        }
+
+        /// <summary>
+        /// Builds an assembly document from its display info and the already-resolved occurrences
+        /// (their component file names supplied by the tree walk in <see cref="DocumentExporter"/>).
+        /// </summary>
+        public OblikovatiDocument TranslateAssembly(InventorDocument source, IReadOnlyList<OccurrenceData> occurrences)
+        {
+            var recipe = new AssemblyRecipe
+            {
+                Units = new Units { Length = source.LengthUnit, Angle = source.AngleUnit },
+            };
+            foreach (OccurrenceData occurrence in occurrences)
+            {
+                recipe.Occurrences.Add(occurrence);
+            }
+
+            return new OblikovatiDocument
+            {
+                DocumentType = (int)InventorDocumentKind.Assembly,
+                DisplayName = source.DisplayName,
+                Model = recipe,
             };
         }
 

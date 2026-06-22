@@ -18,7 +18,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
             Assert.True(sink.Files.ContainsKey("bracket.opd"));
             Assert.Contains("schemaVersion: 2", sink.Files["bracket.opd"]);
-            Assert.Equal("Exported bracket.opd.", summary);
+            Assert.Equal("Exported 1 file.", summary);
         }
 
         [Fact]

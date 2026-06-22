@@ -37,7 +37,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
         {
             var source = new InventorDocument { DisplayName = "rig", Kind = InventorDocumentKind.Assembly };
 
-            OblikovatiDocument recipe = new DocumentTranslator().Translate(source, new ExportReport());
+            OblikovatiDocument recipe =
+                new DocumentTranslator().TranslateAssembly(source, new System.Collections.Generic.List<OccurrenceData>());
 
             Assert.Equal(2, recipe.DocumentType);
         }
