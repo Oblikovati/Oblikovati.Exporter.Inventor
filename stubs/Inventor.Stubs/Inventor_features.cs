@@ -20,6 +20,7 @@ namespace Inventor
         kDistanceExtent = 20737,
         kAngleExtent = 20738,
         kFullSweepExtent = 20739,
+        kThroughAllExtent = 20743,
     }
 
     /// <summary>Which way a single-distance extent grows from the sketch plane.</summary>
@@ -48,6 +49,10 @@ namespace Inventor
         public virtual ChamferFeatures ChamferFeatures => throw Stub.Error();
 
         public virtual ShellFeatures ShellFeatures => throw Stub.Error();
+
+        public virtual FaceDraftFeatures FaceDraftFeatures => throw Stub.Error();
+
+        public virtual HoleFeatures HoleFeatures => throw Stub.Error();
     }
 
     /// <summary>Common base of the modelling features, exposing the Name a pattern reads.</summary>

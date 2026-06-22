@@ -117,13 +117,15 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<MirrorFeature>? mirrors = null,
             IList<FilletFeature>? fillets = null,
             IList<ChamferFeature>? chamfers = null,
-            IList<ShellFeature>? shells = null)
+            IList<ShellFeature>? shells = null,
+            IList<FaceDraftFeature>? drafts = null,
+            IList<HoleFeature>? holes = null)
         {
             _parameters = new FakeParameters(new FakeUserParameters(userParameters));
             _sketches = new FakePlanarSketches(sketches ?? new List<PlanarSketch>());
             _features = new FakePartFeatures(
                 extrudes ?? new List<ExtrudeFeature>(), revolves, rectPatterns, circPatterns, mirrors,
-                fillets, chamfers, shells);
+                fillets, chamfers, shells, drafts, holes);
             _workPlanes = new FakeWorkPlanes(workPlanes ?? new List<WorkPlane>());
         }
 
@@ -171,14 +173,16 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<MirrorFeature>? mirrors = null,
             IList<FilletFeature>? fillets = null,
             IList<ChamferFeature>? chamfers = null,
-            IList<ShellFeature>? shells = null)
+            IList<ShellFeature>? shells = null,
+            IList<FaceDraftFeature>? drafts = null,
+            IList<HoleFeature>? holes = null)
         {
             _displayName = displayName;
             _fullFileName = fullFileName;
             _units = units;
             _definition = new FakePartComponentDefinition(
                 userParameters, sketches, extrudes, workPlanes, revolves, rectPatterns, circPatterns, mirrors,
-                fillets, chamfers, shells);
+                fillets, chamfers, shells, drafts, holes);
         }
 
         public override DocumentTypeEnum DocumentType => DocumentTypeEnum.kPartDocumentObject;

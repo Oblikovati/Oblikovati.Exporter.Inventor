@@ -17,13 +17,22 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private static InventorDocument Extract(
             IList<FilletFeature>? fillets = null,
             IList<ChamferFeature>? chamfers = null,
-            IList<ShellFeature>? shells = null)
+            IList<ShellFeature>? shells = null,
+            IList<FaceDraftFeature>? drafts = null,
+            IList<HoleFeature>? holes = null)
         {
             var doc = new FakePartDocument(
                 "p.ipt", @"C:\work\p.ipt", new FakeUnitsOfMeasure(), new List<UserParameter>(),
-                fillets: fillets, chamfers: chamfers, shells: shells);
+                fillets: fillets, chamfers: chamfers, shells: shells, drafts: drafts, holes: holes);
             return new InventorSessionAdapter(new FakeInventorApplication(doc)).ExtractActiveDocument();
         }
+
+        private static FakePlanarFace TopFace() => new FakePlanarFace(
+            new[]
+            {
+                new double[] { 0, 0, 5 }, new double[] { 4, 0, 5 }, new double[] { 4, 3, 5 }, new double[] { 0, 3, 5 },
+            },
+            new double[] { 0, 0, 1 });
 
         [Fact]
         public void Fillet_reads_radius_and_an_edge_midpoint_and_direction()
@@ -69,6 +78,39 @@ namespace Oblikovati.Exporter.Inventor.Tests
             InventorFaceDescriptor face = Assert.Single(s.RemovedFaces);
             Assert.Equal(new double[] { 2, 1.5, 5 }, face.Centroid); // average of the four corners
             Assert.Equal(new double[] { 0, 0, 1 }, face.Normal);
+        }
+
+        [Fact]
+        public void Draft_reads_angle_faces_and_pull_direction_from_a_planar_face()
+        {
+            var faces = new List<Face> { TopFace() };
+            var drafts = new List<FaceDraftFeature>
+            {
+                new FakeFaceDraftFeature("Draft1", 0.1, faces, TopFace()), // pull off the top face's normal
+            };
+
+            var d = Assert.IsType<InventorDraft>(Extract(drafts: drafts).Features.Last());
+
+            Assert.Equal(0.1, d.AngleRadians);
+            Assert.Equal(new double[] { 0, 0, 1 }, d.Pull);
+            Assert.Single(d.Faces);
+        }
+
+        [Fact]
+        public void Hole_reads_diameter_depth_throughall_and_a_point_placement_face()
+        {
+            var holes = new List<HoleFeature>
+            {
+                new FakeHoleFeature("Hole1", 1, 2, throughAll: false, placementFace: TopFace()),
+            };
+
+            var h = Assert.IsType<InventorHole>(Extract(holes: holes).Features.Last());
+
+            Assert.Equal(1.0, h.DiameterCm);
+            Assert.Equal(2.0, h.DepthCm);
+            Assert.False(h.ThroughAll);
+            Assert.Equal(new double[] { 2, 1.5, 5 }, h.PlacementFace.Centroid);
+            Assert.Equal(new double[] { 0, 0, 1 }, h.PlacementFace.Normal);
         }
     }
 }

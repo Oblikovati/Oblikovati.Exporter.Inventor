@@ -112,4 +112,64 @@ namespace Inventor
 
         public virtual Parameter Thickness => throw Stub.Error();
     }
+
+    /// <summary>Stub of the face-draft features collection (object-indexed, 1-based).</summary>
+    public class FaceDraftFeatures
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual FaceDraftFeature this[object index] => throw Stub.Error();
+    }
+
+    /// <summary>
+    /// Stub of one face-draft feature. The underscore accessors are the strongly-typed COM
+    /// variants of the definition's object-typed members. PullDirection is a planar face/work
+    /// plane (its normal) or an axis/edge (its direction).
+    /// </summary>
+    public class FaceDraftFeature
+    {
+        public virtual string Name => throw Stub.Error();
+
+        public virtual Parameter _DraftAngle => throw Stub.Error();
+
+        public virtual FaceCollection _InputFaces => throw Stub.Error();
+
+        public virtual object _PullDirection => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the hole features collection (object-indexed, 1-based).</summary>
+    public class HoleFeatures
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual HoleFeature this[object index] => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one hole feature; diameter/depth/extent plus its placement.</summary>
+    public class HoleFeature
+    {
+        public virtual string Name => throw Stub.Error();
+
+        public virtual Parameter HoleDiameter => throw Stub.Error();
+
+        public virtual double Depth => throw Stub.Error();
+
+        public virtual PartFeatureExtentEnum ExtentType => throw Stub.Error();
+
+        public virtual HolePlacementDefinition PlacementDefinition => throw Stub.Error();
+    }
+
+    /// <summary>Base of the hole-placement definitions (the concrete kind keys the placement face).</summary>
+    public class HolePlacementDefinition
+    {
+    }
+
+    /// <summary>
+    /// Stub of a point-based hole placement. Direction is the entity defining the hole axis —
+    /// a planar Face (or WorkPlane) the hole drills into, used as the placement face.
+    /// </summary>
+    public class PointHolePlacementDefinition : HolePlacementDefinition
+    {
+        public virtual object Direction => throw Stub.Error();
+    }
 }
