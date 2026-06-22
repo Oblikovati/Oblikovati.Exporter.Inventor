@@ -112,6 +112,15 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override object Entity => _entity;
     }
 
+    public sealed class FakeSmoothConstraint : SmoothConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        public FakeSmoothConstraint(object a, object b) { _a = a; _b = b; }
+        public override object EntityOne => _a;
+        public override object EntityTwo => _b;
+    }
+
     public sealed class FakeTwoLineAngleDimConstraint : TwoLineAngleDimConstraint
     {
         private readonly object _a;

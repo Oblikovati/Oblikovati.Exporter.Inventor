@@ -102,6 +102,14 @@ namespace Inventor
         public virtual object Entity => throw Stub.Error();
     }
 
+    /// <summary>Stub of a smooth (G2) constraint between two curves meeting at a point.</summary>
+    public class SmoothConstraint : GeometricConstraint
+    {
+        public virtual object EntityOne => throw Stub.Error();
+
+        public virtual object EntityTwo => throw Stub.Error();
+    }
+
     /// <summary>Stub of a sketch's dimension-constraints collection.</summary>
     public class DimensionConstraints
     {

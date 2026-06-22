@@ -425,6 +425,7 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             doc.Parameters.Add(new InventorParameter { Name = "ang", Expression = "45 deg", Unit = "deg" });
             var sketch = new InventorSketch { Name = "Sampler" };
             const long l0 = 1, l1 = 2, c0 = 3, c1 = 4, lt = 5, ct = 6, la = 7, lsa = 8, lsb = 9, lx = 10;
+            const long sa = 11, sb = 12;
             sketch.Curves.Add(Line(l0, 0, 0, 2, 0));
             sketch.Curves.Add(Line(l1, 3, 0, 5, 0));         // collinear + equal length to l0
             sketch.Curves.Add(Circle(c0, 0, 5, 1));
@@ -435,6 +436,8 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             sketch.Curves.Add(Line(lsa, -3, 4, -3, 6));      // symmetric pair about lx
             sketch.Curves.Add(Line(lsb, 3, 4, 3, 6));
             sketch.Curves.Add(Line(lx, 0, 3, 0, 7));         // vertical symmetry axis at x=0
+            sketch.Curves.Add(Spline(sa, new[] { new double[] { 20, 0 }, new double[] { 21, 1 }, new double[] { 22, 0 } }));
+            sketch.Curves.Add(Spline(sb, new[] { new double[] { 22, 0 }, new double[] { 23, -1 }, new double[] { 24, 0 } }));
 
             sketch.Constraints.Add(Between(InventorConstraintKind.Collinear, l0, l1));
             sketch.Constraints.Add(Between(InventorConstraintKind.EqualLength, l0, l1));
@@ -455,6 +458,14 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             symmetry.Curves.Add(lx);
             sketch.Constraints.Add(symmetry);
 
+            // Smooth (G2): the two splines meet at (22,0) — sa's last point and sb's first.
+            var smooth = new InventorSketchConstraint { Kind = InventorConstraintKind.Smooth };
+            smooth.Points.Add(new InventorPointRef(sa, InventorCurvePointRole.SplinePoint, 2));
+            smooth.Points.Add(new InventorPointRef(sb, InventorCurvePointRole.SplinePoint, 0));
+            smooth.Curves.Add(sa);
+            smooth.Curves.Add(sb);
+            sketch.Constraints.Add(smooth);
+
             var angle = new InventorSketchDimension { Kind = InventorDimensionKind.Angle, Expression = "ang" };
             angle.Curves.Add(l0);
             angle.Curves.Add(la);
@@ -471,6 +482,17 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             Center = new[] { cx, cy },
             Radius = radius,
         };
+
+        private static InventorCurve Spline(long id, double[][] points)
+        {
+            var spline = new InventorCurve { Id = id, Kind = InventorCurveKind.Spline, Fit = true };
+            foreach (double[] p in points)
+            {
+                spline.SplinePoints.Add(p);
+            }
+
+            return spline;
+        }
 
         private static InventorSketchConstraint Between(InventorConstraintKind kind, long a, long b)
         {

@@ -279,6 +279,9 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     case GroundConstraint g:
                         AddGround(result, curveIds, g.Entity);
                         break;
+                    case SmoothConstraint sm:
+                        AddSmooth(result, curveIds, sm.EntityOne, sm.EntityTwo);
+                        break;
                 }
             }
         }
@@ -371,6 +374,59 @@ namespace Oblikovati.Exporter.Inventor.Inv
             if (c.Points.Count > 0)
             {
                 result.Constraints.Add(c);
+            }
+        }
+
+        // Smooth (G2) between two curves: emit the two curves plus their coincident junction
+        // points (the shared endpoint, one ref per curve), which the engine's smooth needs.
+        private static void AddSmooth(
+            InventorSketch result, IDictionary<object, long> curveIds, object entityOne, object entityTwo)
+        {
+            if (!curveIds.TryGetValue(entityOne, out long id1) || !curveIds.TryGetValue(entityTwo, out long id2))
+            {
+                return;
+            }
+
+            InventorCurve? a = FindCurve(result, id1);
+            InventorCurve? b = FindCurve(result, id2);
+            if (a == null || b == null)
+            {
+                return;
+            }
+
+            foreach ((InventorPointRef Ref, double[] Pt) ea in EndpointSlots(a))
+            {
+                foreach ((InventorPointRef Ref, double[] Pt) eb in EndpointSlots(b))
+                {
+                    if (Distance2D(ea.Pt, eb.Pt) <= CoincidenceTol)
+                    {
+                        var c = new InventorSketchConstraint { Kind = InventorConstraintKind.Smooth };
+                        c.Points.Add(ea.Ref);
+                        c.Points.Add(eb.Ref);
+                        c.Curves.Add(id1);
+                        c.Curves.Add(id2);
+                        result.Constraints.Add(c);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // A curve's free endpoints (where it can join another smoothly) with their coordinates.
+        private static IEnumerable<(InventorPointRef Ref, double[] Pt)> EndpointSlots(InventorCurve c)
+        {
+            switch (c.Kind)
+            {
+                case InventorCurveKind.Line:
+                case InventorCurveKind.Arc:
+                    yield return (new InventorPointRef(c.Id, InventorCurvePointRole.Start), c.Start);
+                    yield return (new InventorPointRef(c.Id, InventorCurvePointRole.End), c.End);
+                    break;
+                case InventorCurveKind.Spline when c.SplinePoints.Count > 0:
+                    yield return (new InventorPointRef(c.Id, InventorCurvePointRole.SplinePoint, 0), c.SplinePoints[0]);
+                    int last = c.SplinePoints.Count - 1;
+                    yield return (new InventorPointRef(c.Id, InventorCurvePointRole.SplinePoint, last), c.SplinePoints[last]);
+                    break;
             }
         }
 

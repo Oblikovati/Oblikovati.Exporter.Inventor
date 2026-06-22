@@ -140,6 +140,22 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
 
         [Fact]
+        public void Reads_a_smooth_constraint_as_two_curves_joined_at_their_shared_point()
+        {
+            SketchLine a = FakeSketchLine.From(0, 0, 2, 0);
+            SketchLine b = FakeSketchLine.From(2, 0, 4, 0); // shares (2,0) with a's end point
+            var constraints = new List<GeometricConstraint> { new FakeSmoothConstraint(a, b) };
+
+            InventorSketch sk = Extract(
+                new List<SketchLine> { a, b }, new List<SketchCircle>(),
+                constraints, new List<DimensionConstraint>());
+
+            InventorSketchConstraint smooth = Assert.Single(sk.Constraints, c => c.Kind == InventorConstraintKind.Smooth);
+            Assert.Equal(2, smooth.Points.Count); // the two junction points (one per curve)
+            Assert.Equal(2, smooth.Curves.Count); // the two smooth curves
+        }
+
+        [Fact]
         public void Reads_diameter_dimension_on_a_circle()
         {
             SketchCircle circle = new FakeSketchCircle(0, 0, 2);
