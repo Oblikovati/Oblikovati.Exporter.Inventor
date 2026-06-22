@@ -23,6 +23,8 @@ namespace Inventor
 
         public virtual SketchCircles SketchCircles => throw Stub.Error();
 
+        public virtual SketchArcs SketchArcs => throw Stub.Error();
+
         public virtual GeometricConstraints GeometricConstraints => throw Stub.Error();
 
         public virtual DimensionConstraints DimensionConstraints => throw Stub.Error();
@@ -64,6 +66,33 @@ namespace Inventor
         public virtual int Count => throw Stub.Error();
 
         public virtual SketchCircle this[int index] => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the sketch-arcs collection (int-indexed, 1-based).</summary>
+    public class SketchArcs
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual SketchArc this[int index] => throw Stub.Error();
+    }
+
+    /// <summary>
+    /// Stub of one sketch arc. SweepAngle's sign gives the sweep sense (positive = counter-
+    /// clockwise from start to end).
+    /// </summary>
+    public class SketchArc
+    {
+        public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
+
+        public virtual SketchPoint StartSketchPoint => throw Stub.Error();
+
+        public virtual SketchPoint EndSketchPoint => throw Stub.Error();
+
+        public virtual double Radius => throw Stub.Error();
+
+        public virtual double SweepAngle => throw Stub.Error();
+
+        public virtual bool Construction => throw Stub.Error();
     }
 
     /// <summary>Stub of one sketch circle.</summary>

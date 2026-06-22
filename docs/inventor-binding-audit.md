@@ -77,8 +77,9 @@ The M3 sketch extractor compiles clean against all three genuine interops. Membe
 | `PlanarSketch.AxisEntityGeometry` | `Line` (sketch X axis) |
 | `PlanarSketch.PlanarEntityGeometry` | `Plane` (its `Normal` completes the frame) |
 | `SketchLines[i]` / `SketchCircles[i]` | `SketchLine this[int]` / `SketchCircle this[int]` (1-based, **int**-indexed unlike `PlanarSketches`) |
-| `SketchLine.StartSketchPoint` / `.EndSketchPoint` / `.Construction` | `SketchPoint` / `SketchPoint` / `bool` |
+| `SketchLine.StartSketchPoint` / `.EndSketchPoint` / `.Construction` / `.Geometry3d` | `SketchPoint` / `SketchPoint` / `bool` / `LineSegment` |
 | `SketchCircle.CenterSketchPoint` / `.Radius` / `.Construction` | `SketchPoint` / `double` / `bool` |
+| `PlanarSketch.SketchArcs` → `SketchArc.CenterSketchPoint`/`.StartSketchPoint`/`.EndSketchPoint`/`.SweepAngle` | center/start/end + sweep sense (positive = CCW); arc ends join a profile (coincidence inferred) |
 | `SketchPoint.Geometry` | `Point2d` (sketch coords, cm) |
 | `Point2d.X/.Y`, `Point.X/.Y/.Z` | `double` |
 | `Plane.Normal`, `Line.Direction` | `UnitVector` |
@@ -264,4 +265,4 @@ tessellation is a later step. Both are also volume-round-tripped (a ~31.4 cm³ c
   point placement whose `Direction` is a planar `Face` is read.
 
 Also pending: less-common sketch constraints (tangent/concentric/collinear/equal) + angle
-dimensions, and arcs/splines.
+dimensions, and sketch splines.

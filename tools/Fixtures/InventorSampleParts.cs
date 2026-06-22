@@ -320,6 +320,47 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        /// <summary>
+        /// A half-disc (a diameter line closed by a semicircular arc, r=2 cm) extruded 5 cm into a
+        /// half-cylinder. Volume = (π·2²/2)·5 = 10π ≈ 31.42 cm³ — exercises an arc in a profile.
+        /// </summary>
+        public static InventorDocument ArcExtrudePart()
+        {
+            var doc = new InventorDocument { DisplayName = "arc-extrude", Kind = InventorDocumentKind.Part };
+
+            var sketch = new InventorSketch { Name = "HalfDisc" };
+            const long l0 = 1, a1 = 2;
+            sketch.Curves.Add(Line(l0, -2, 0, 2, 0)); // the diameter
+            sketch.Curves.Add(new InventorCurve
+            {
+                Id = a1,
+                Kind = InventorCurveKind.Arc,
+                Center = new double[] { 0, 0 },
+                Start = new double[] { 2, 0 },
+                End = new double[] { -2, 0 },
+                Ccw = true, // upper semicircle
+            });
+            // The arc's center/start/end fully fix it: pin both diameter ends + the centre, and
+            // coincide the arc ends to the diameter ends. (Oblikovati's radius dim is circle-only.)
+            Coincide(sketch, l0, InventorCurvePointRole.End, a1, InventorCurvePointRole.Start);
+            Coincide(sketch, a1, InventorCurvePointRole.End, l0, InventorCurvePointRole.Start);
+            sketch.Constraints.Add(Fix(l0, InventorCurvePointRole.Start));
+            sketch.Constraints.Add(Fix(l0, InventorCurvePointRole.End));
+            sketch.Constraints.Add(Fix(a1, InventorCurvePointRole.Center));
+
+            doc.Sketches.Add(sketch);
+            doc.Features.Add(new InventorExtrude
+            {
+                Name = "Extrude1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = InventorOperation.NewBody,
+                Direction = InventorExtentDirection.Positive,
+                Distance = 5,
+            });
+            return doc;
+        }
+
         // A fixed circle of the given radius (cm) on a plane offset originZ along Z, with a
         // diameter dimension. The 2D center is the origin, so it sits at (0,0,originZ) in model space.
         private static InventorSketch CircleSketch(string name, double radius, double originZ)
