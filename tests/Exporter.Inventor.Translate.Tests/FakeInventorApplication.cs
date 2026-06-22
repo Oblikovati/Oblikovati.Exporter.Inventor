@@ -98,21 +98,33 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override UserParameter this[object index] => _items[(int)index - 1];
     }
 
-    /// <summary>Named fake part component definition holding the user parameters and sketches.</summary>
+    /// <summary>Named fake part component definition holding parameters, sketches, features and work planes.</summary>
     public sealed class FakePartComponentDefinition : PartComponentDefinition
     {
         private readonly Parameters _parameters;
         private readonly PlanarSketches _sketches;
+        private readonly PartFeatures _features;
+        private readonly WorkPlanes _workPlanes;
 
-        public FakePartComponentDefinition(IList<UserParameter> userParameters, IList<PlanarSketch>? sketches = null)
+        public FakePartComponentDefinition(
+            IList<UserParameter> userParameters,
+            IList<PlanarSketch>? sketches = null,
+            IList<ExtrudeFeature>? extrudes = null,
+            IList<WorkPlane>? workPlanes = null)
         {
             _parameters = new FakeParameters(new FakeUserParameters(userParameters));
             _sketches = new FakePlanarSketches(sketches ?? new List<PlanarSketch>());
+            _features = new FakePartFeatures(extrudes ?? new List<ExtrudeFeature>());
+            _workPlanes = new FakeWorkPlanes(workPlanes ?? new List<WorkPlane>());
         }
 
         public override Parameters Parameters => _parameters;
 
         public override PlanarSketches Sketches => _sketches;
+
+        public override PartFeatures Features => _features;
+
+        public override WorkPlanes WorkPlanes => _workPlanes;
     }
 
     /// <summary>Named fake master Parameters collection exposing the user parameters.</summary>
@@ -141,12 +153,14 @@ namespace Oblikovati.Exporter.Inventor.Tests
             string fullFileName,
             UnitsOfMeasure units,
             IList<UserParameter> userParameters,
-            IList<PlanarSketch>? sketches = null)
+            IList<PlanarSketch>? sketches = null,
+            IList<ExtrudeFeature>? extrudes = null,
+            IList<WorkPlane>? workPlanes = null)
         {
             _displayName = displayName;
             _fullFileName = fullFileName;
             _units = units;
-            _definition = new FakePartComponentDefinition(userParameters, sketches);
+            _definition = new FakePartComponentDefinition(userParameters, sketches, extrudes, workPlanes);
         }
 
         public override DocumentTypeEnum DocumentType => DocumentTypeEnum.kPartDocumentObject;

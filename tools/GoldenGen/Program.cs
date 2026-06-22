@@ -50,6 +50,8 @@ namespace Oblikovati.Exporter.Inventor.GoldenGen
             yield return InventorSampleParts.ParametricPart();
             yield return InventorSampleParts.RectanglePart();
             yield return InventorSampleParts.CirclePart();
+            yield return InventorSampleParts.BoxPart();
+            yield return InventorSampleParts.DatumPlanePart();
         }
     }
 }

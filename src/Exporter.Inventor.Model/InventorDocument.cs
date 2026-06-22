@@ -40,6 +40,12 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>2D sketches extracted from the part, in creation order.</summary>
         public IList<InventorSketch> Sketches { get; } = new List<InventorSketch>();
+
+        /// <summary>User work planes (datums) extracted from the part, in creation order.</summary>
+        public IList<InventorWorkPlane> WorkPlanes { get; } = new List<InventorWorkPlane>();
+
+        /// <summary>Feature history (extrudes, …) in creation order.</summary>
+        public IList<InventorFeature> Features { get; } = new List<InventorFeature>();
     }
 
     /// <summary>

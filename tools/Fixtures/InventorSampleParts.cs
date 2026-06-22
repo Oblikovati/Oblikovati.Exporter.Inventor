@@ -93,6 +93,40 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        /// <summary>
+        /// The rectangle extruded 5 cm into a solid box. Volume = 4 × 3 × 5 = 60 cm³ — the
+        /// end-to-end fidelity check (sketch profile → solid) when round-tripped.
+        /// </summary>
+        public static InventorDocument BoxPart()
+        {
+            InventorDocument doc = RectanglePart();
+            doc.DisplayName = "box";
+            doc.Features.Add(new InventorExtrude
+            {
+                Name = "Extrude1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = InventorOperation.NewBody,
+                Direction = InventorExtentDirection.Positive,
+                Distance = 5,
+            });
+            return doc;
+        }
+
+        /// <summary>A part carrying a single datum: a work plane offset 5 cm above XY.</summary>
+        public static InventorDocument DatumPlanePart()
+        {
+            var doc = new InventorDocument { DisplayName = "datum-plane", Kind = InventorDocumentKind.Part };
+            doc.WorkPlanes.Add(new InventorWorkPlane
+            {
+                Name = "Offset Plane",
+                Origin = new double[] { 0, 0, 5 },
+                XAxis = new double[] { 1, 0, 0 },
+                YAxis = new double[] { 0, 1, 0 },
+            });
+            return doc;
+        }
+
         private static InventorCurve Line(long id, double x0, double y0, double x1, double y1) => new InventorCurve
         {
             Id = id,

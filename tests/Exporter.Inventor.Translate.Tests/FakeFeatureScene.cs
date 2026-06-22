@@ -1,0 +1,176 @@
+// SPDX-License-Identifier: GPL-2.0-only
+using System.Collections.Generic;
+using Inventor;
+
+namespace Oblikovati.Exporter.Inventor.Tests
+{
+    /// <summary>
+    /// Named fakes of the Inventor feature + work-plane surface, subclassing the all-virtual
+    /// stub so the real <c>FeatureExtractor</c> runs with no Inventor install.
+    /// </summary>
+    public sealed class FakePartFeatures : PartFeatures
+    {
+        private readonly ExtrudeFeatures _extrudes;
+
+        public FakePartFeatures(IList<ExtrudeFeature> extrudes)
+        {
+            _extrudes = new FakeExtrudeFeatures(extrudes);
+        }
+
+        public override ExtrudeFeatures ExtrudeFeatures => _extrudes;
+    }
+
+    public sealed class FakeExtrudeFeatures : ExtrudeFeatures
+    {
+        private readonly IList<ExtrudeFeature> _items;
+
+        public FakeExtrudeFeatures(IList<ExtrudeFeature> items)
+        {
+            _items = items;
+        }
+
+        public override int Count => _items.Count;
+
+        public override ExtrudeFeature this[object index] => _items[(int)index - 1];
+    }
+
+    public sealed class FakeExtrudeFeature : ExtrudeFeature
+    {
+        private readonly string _name;
+        private readonly PartFeatureOperationEnum _operation;
+        private readonly Profile _profile;
+        private readonly ExtrudeDefinition _definition;
+
+        public FakeExtrudeFeature(
+            string name, PartFeatureOperationEnum operation, string parentSketchName, double distanceCm,
+            PartFeatureExtentDirectionEnum direction = PartFeatureExtentDirectionEnum.kPositiveExtentDirection)
+        {
+            _name = name;
+            _operation = operation;
+            _profile = new FakeProfile(parentSketchName);
+            _definition = new FakeExtrudeDefinition(new FakeDistanceExtent(distanceCm, direction));
+        }
+
+        public override string Name => _name;
+
+        public override PartFeatureOperationEnum Operation => _operation;
+
+        public override Profile Profile => _profile;
+
+        public override ExtrudeDefinition Definition => _definition;
+    }
+
+    public sealed class FakeExtrudeDefinition : ExtrudeDefinition
+    {
+        private readonly PartFeatureExtent _extent;
+
+        public FakeExtrudeDefinition(PartFeatureExtent extent)
+        {
+            _extent = extent;
+        }
+
+        public override PartFeatureExtentEnum ExtentType => PartFeatureExtentEnum.kDistanceExtent;
+
+        public override PartFeatureExtent Extent => _extent;
+    }
+
+    public sealed class FakeDistanceExtent : DistanceExtent
+    {
+        private readonly Parameter _distance;
+        private readonly PartFeatureExtentDirectionEnum _direction;
+
+        public FakeDistanceExtent(double distanceCm, PartFeatureExtentDirectionEnum direction)
+        {
+            _distance = new FakeDistanceParameter(distanceCm);
+            _direction = direction;
+        }
+
+        public override Parameter Distance => _distance;
+
+        public override PartFeatureExtentDirectionEnum Direction => _direction;
+    }
+
+    public sealed class FakeDistanceParameter : Parameter
+    {
+        private readonly double _value;
+
+        public FakeDistanceParameter(double value)
+        {
+            _value = value;
+        }
+
+        public override double _Value => _value;
+    }
+
+    public sealed class FakeProfile : Profile
+    {
+        private readonly PlanarSketch _parent;
+
+        public FakeProfile(string sketchName)
+        {
+            _parent = new FakeNamedSketch(sketchName);
+        }
+
+        public override PlanarSketch Parent => _parent;
+    }
+
+    /// <summary>A minimal PlanarSketch fake exposing only the Name the extractor reads from a profile.</summary>
+    public sealed class FakeNamedSketch : PlanarSketch
+    {
+        private readonly string _name;
+
+        public FakeNamedSketch(string name)
+        {
+            _name = name;
+        }
+
+        public override string Name => _name;
+    }
+
+    public sealed class FakeWorkPlanes : WorkPlanes
+    {
+        private readonly IList<WorkPlane> _items;
+
+        public FakeWorkPlanes(IList<WorkPlane> items)
+        {
+            _items = items;
+        }
+
+        public override int Count => _items.Count;
+
+        public override WorkPlane this[object index] => _items[(int)index - 1];
+    }
+
+    public sealed class FakeWorkPlane : WorkPlane
+    {
+        private readonly string _name;
+        private readonly Plane _plane;
+
+        public FakeWorkPlane(string name, double[] origin, double[] normal)
+        {
+            _name = name;
+            _plane = new FakeWorkPlaneGeometry(origin, normal);
+        }
+
+        public override string Name => _name;
+
+        public override Plane Plane => _plane;
+    }
+
+    /// <summary>A Plane fake giving both root point and normal (work-plane geometry).</summary>
+    public sealed class FakeWorkPlaneGeometry : Plane
+    {
+        private readonly Point _root;
+        private readonly UnitVector _normal;
+
+        public FakeWorkPlaneGeometry(double[] origin, double[] normal)
+        {
+            _root = new FakePoint(origin[0], origin[1], origin[2]);
+            _normal = new FakeUnitVector(normal[0], normal[1], normal[2]);
+        }
+
+        public override Point RootPoint => _root;
+
+        public override UnitVector Normal => _normal;
+    }
+}

@@ -18,9 +18,17 @@ namespace Oblikovati.Exporter.Inventor.Recipe
         [YamlMember(Alias = "parameters", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
         public IList<ParameterRecipe> Parameters { get; } = new List<ParameterRecipe>();
 
+        /// <summary>Datum work features (planes). Omitted when empty.</summary>
+        [YamlMember(Alias = "workFeatures", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public IList<WorkFeatureData> WorkFeatures { get; } = new List<WorkFeatureData>();
+
         /// <summary>2D sketches. Features reference these by array index. Omitted when empty.</summary>
         [YamlMember(Alias = "sketches", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
         public IList<SketchData> Sketches { get; } = new List<SketchData>();
+
+        /// <summary>Feature history program, in order. Omitted when empty.</summary>
+        [YamlMember(Alias = "features", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public IList<FeatureData> Features { get; } = new List<FeatureData>();
     }
 
     /// <summary>

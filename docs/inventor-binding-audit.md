@@ -89,10 +89,37 @@ Note the indexer asymmetry the real compile pinned: `PlanarSketches` is **object
 directly from Inventor (origin/axis/normal), not fitted, and 2D points are read in centimetres —
 Inventor's database unit, which is the recipe unit, so coordinates pass through unscaled.
 
+## ✅ Feature + work-plane read surface (real-compile-verified on 2025/2026/2027)
+
+The M4 feature extractor compiles clean against all three genuine interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `PartComponentDefinition.Features` / `.WorkPlanes` | `PartFeatures` / `WorkPlanes` |
+| `PartFeatures.ExtrudeFeatures` | `ExtrudeFeatures` |
+| `ExtrudeFeatures[i]` / `.Count` | `ExtrudeFeature this[object Index]` (1-based) / `int` |
+| `ExtrudeFeature.Name` / `.Operation` / `.Profile` / `.Definition` | `string` / `PartFeatureOperationEnum` / `Profile` / `ExtrudeDefinition` |
+| `Profile.Parent` | `Sketch` (downcast to `PlanarSketch` for its `Name`) |
+| `ExtrudeDefinition.Extent` / `.ExtentType` | `PartFeatureExtent` / `PartFeatureExtentEnum` |
+| `DistanceExtent.Distance` / `.Direction` | `Parameter` / `PartFeatureExtentDirectionEnum` |
+| `Parameter._Value` | `double` (evaluated value, cm) |
+| `WorkPlanes[i]` / `.Count` | `WorkPlane this[object Index]` (1-based) / `int` |
+| `WorkPlane.Name` / `.Plane` | `string` / `Plane` (`RootPoint` + `Normal`) |
+| `PartFeatureOperationEnum` | `kJoin=20481`, `kCut=20482`, `kIntersect=20483`, `kNewBody=20485` |
+| `PartFeatureExtentDirectionEnum` | `kPositive=20993`, `kNegative=20994`, `kSymmetric=20995` |
+| `PartFeatureExtentEnum.kDistanceExtent` | `20737` |
+
+Notes the real compile pinned: `Parameter` (a feature's distance) is a **distinct COM interface
+from `UserParameter`** — they don't share an inheritance the C# can rely on, so each is read with
+its own members (`Parameter._Value` vs `UserParameter.get_Units()`). `Profile.Parent` is typed
+`Sketch` (the base), downcast to `PlanarSketch`. The extrude distance is read evaluated from the
+distance `Parameter` (cm); a parameter-driven extent is a later refinement.
+
 ## Not yet exercised
 
-Inventor's explicit geometric constraints and dimensions (read from `GeometricConstraints` /
-`DimensionConstraints`), arcs/splines, features, work features, patterns/mirror, and the assembly
-occurrence tree are added in later milestones; their builders will be audited the same way as
-they land. The M3 extractor reads line/circle geometry with inferred coincidence; the explicit
-constraints/dimensions are the parametric refinement.
+Inventor's explicit geometric constraints and dimensions (`GeometricConstraints` /
+`DimensionConstraints`), arcs/splines, revolve/sweep/loft, patterns/mirror, dress-ups, and the
+assembly occurrence tree are added in later milestones; their builders will be audited the same
+way as they land. The M3/M4 extractors read line/circle geometry (inferred coincidence) and
+distance-extent extrudes + datum planes; explicit constraints/dimensions and other extents/feature
+kinds are the refinements.
