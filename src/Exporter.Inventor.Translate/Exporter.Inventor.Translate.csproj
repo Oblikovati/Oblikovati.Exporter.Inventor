@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The translation core: Inventor-neutral IR -> Oblikovati recipe. PURE (no Inventor
+       dependency) so it carries the bulk of the logic and the bulk of the tests, and runs
+       on any runner. Unsupported source features are recorded in the ExportReport, never
+       silently dropped and never replaced by a B-rep/STEP dump. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Translate</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.Inventor.Translate</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Exporter.Inventor.Model\Exporter.Inventor.Model.csproj" />
+    <ProjectReference Include="..\Exporter.Inventor.Recipe\Exporter.Inventor.Recipe.csproj" />
+  </ItemGroup>
+
+</Project>

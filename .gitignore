@@ -1,0 +1,19 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+
+# Test/coverage artifacts
+TestResults/
+coverage*.xml
+*.trx
+
+# IDE
+.vs/
+.idea/
+*.suo
+
+# Local cross-repo checkout used by CI Job 2
+_oblikovati/

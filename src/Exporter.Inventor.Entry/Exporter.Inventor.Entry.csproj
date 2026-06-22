@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The loadable add-in assembly: wires the Inventor adapter to the translator and writer,
+       and exposes the COM ApplicationAddInServer Inventor loads from the .addin manifest.
+       Library (not exe). netstandard2.0 loads under the .NET 8 runtime Inventor 2027 uses. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Entry</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.Inventor</AssemblyName>
+    <!-- COM-visible so Inventor can create the add-in via its ClassId. -->
+    <ComVisible>true</ComVisible>
+    <UseInventorStubs Condition="'$(UseInventorStubs)' == ''">true</UseInventorStubs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Exporter.Inventor.Model\Exporter.Inventor.Model.csproj" />
+    <ProjectReference Include="..\Exporter.Inventor.Recipe\Exporter.Inventor.Recipe.csproj" />
+    <ProjectReference Include="..\Exporter.Inventor.Translate\Exporter.Inventor.Translate.csproj" />
+    <ProjectReference Include="..\Exporter.Inventor.Inv\Exporter.Inventor.Inv.csproj" />
+  </ItemGroup>
+
+  <!-- StandardAddInServer implements the Inventor.ApplicationAddInServer COM interface, so
+       (unlike a pure orchestrator) this project is host-aware and needs the Inventor types
+       directly. Raw assembly references don't flow transitively from Inv, so mirror its
+       stub/real toggle here. -->
+  <ItemGroup Condition="'$(UseInventorStubs)' == 'true'">
+    <ProjectReference Include="..\..\stubs\Inventor.Stubs\Inventor.Stubs.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseInventorStubs)' == 'false'">
+    <Reference Include="Autodesk.Inventor.Interop">
+      <HintPath>$(InventorSdkDir)\Autodesk.Inventor.Interop.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

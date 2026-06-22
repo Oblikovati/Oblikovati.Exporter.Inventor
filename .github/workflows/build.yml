@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: GPL-2.0-only
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Job 1 — the gate. Builds the pure core + the stub-linked adapter/add-in and runs the
+  # test suite on a stock runner (no Inventor install needed).
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build
+        run: dotnet build -c Release
+      - name: Test
+        run: dotnet test -c Release --no-build --collect:"XPlat Code Coverage"
+
+  # Job 2 — binding check (opt-in). Compiles the adapter + add-in against the REAL Inventor
+  # interop (-p:UseInventorStubs=false) so the compiler flags any facade member that does not
+  # match the genuine Autodesk.Inventor.Interop API — the verification the facade stub can't
+  # give. Runs only when the INVENTOR_SDK_DIR repository variable is set (a self-hosted runner
+  # labelled `inventor` with Inventor 2027 installed, or one carrying the interop assembly);
+  # otherwise it is skipped, so it never blocks PRs until the assemblies are available. Build
+  # only the add-in chain (Entry pulls Inv): the test project links the stub interop, so a
+  # whole-solution real build would clash on the "Autodesk.Inventor.Interop" assembly name.
+  binding-check:
+    if: ${{ vars.INVENTOR_SDK_DIR != '' }}
+    runs-on: [self-hosted, inventor]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build add-in against the real Inventor interop
+        shell: bash
+        run: dotnet build src/Exporter.Inventor.Entry -c Release -p:UseInventorStubs=false -p:InventorSdkDir="${{ vars.INVENTOR_SDK_DIR }}"

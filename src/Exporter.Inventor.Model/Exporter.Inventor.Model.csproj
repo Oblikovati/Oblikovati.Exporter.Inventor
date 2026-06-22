@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Inventor-neutral intermediate representation (IR). Zero Inventor dependency so the
+       translator and its tests run on any runner. netstandard2.0 lets the same assembly
+       load under the .NET 8 runtime Inventor 2025+ add-ins use, and under .NET Framework. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Model</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.Inventor.Model</AssemblyName>
+  </PropertyGroup>
+
+</Project>

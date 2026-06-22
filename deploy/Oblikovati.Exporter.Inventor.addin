@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Inventor add-in manifest. Inventor discovers this file in one of its Addins folders at
+  launch and loads the assembly below. The <ClassId> MUST match the [Guid] on
+  StandardAddInServer; if you change one, change the other.
+
+  SupportedSoftwareVersionGreaterThan "30.." targets Inventor 2027 (major version 31) and
+  later. The <Assembly> path is resolved relative to this file's folder.
+-->
+<Addin Type="Standard">
+  <ClassId>{D29E9B5F-00C3-4F22-B8BA-555610F62927}</ClassId>
+  <ClientId>{74BAA7EE-85B8-4152-964C-C3AFF8BF7511}</ClientId>
+  <DisplayName>Oblikovati Exporter</DisplayName>
+  <Description>Exports the active part/assembly to a native Oblikovati .opd/.oad file, keeping the parametric feature history.</Description>
+  <Assembly>bin\Oblikovati.Exporter.Inventor.dll</Assembly>
+  <LoadOnStartUp>1</LoadOnStartUp>
+  <UserUnloadable>1</UserUnloadable>
+  <Hidden>0</Hidden>
+  <SupportedSoftwareVersionGreaterThan>30..</SupportedSoftwareVersionGreaterThan>
+  <DataVersion>1</DataVersion>
+</Addin>
