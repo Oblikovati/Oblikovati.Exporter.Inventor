@@ -12,4 +12,10 @@
   <Folder Name="/tests/">
     <Project Path="tests/Exporter.Inventor.Translate.Tests/Exporter.Inventor.Translate.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/GoldenGen/GoldenGen.csproj" />
+  </Folder>
+  <Folder Name="/tools/Fixtures/">
+    <Project Path="tools/Fixtures/Exporter.Inventor.Fixtures.csproj" />
+  </Folder>
 </Solution>

@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Exporter.Inventor.Inv\Exporter.Inventor.Inv.csproj" />
     <ProjectReference Include="..\..\src\Exporter.Inventor.Entry\Exporter.Inventor.Entry.csproj" />
     <ProjectReference Include="..\..\stubs\Inventor.Stubs\Inventor.Stubs.csproj" />
+    <ProjectReference Include="..\..\tools\Fixtures\Exporter.Inventor.Fixtures.csproj" />
   </ItemGroup>
 
 </Project>

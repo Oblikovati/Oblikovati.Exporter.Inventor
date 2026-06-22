@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: GPL-2.0-only
+using Oblikovati.Exporter.Inventor.Fixtures;
+using Oblikovati.Exporter.Inventor.Model;
+using Oblikovati.Exporter.Inventor.Recipe;
+using Oblikovati.Exporter.Inventor.Translate;
+using Xunit;
+
+namespace Oblikovati.Exporter.Inventor.Tests
+{
+    /// <summary>
+    /// Asserts the shared golden fixtures in-proc, so the exact documents the round-trip opens
+    /// with oblikovati-cli are also unit-checked here. Keeps the emitter honest without needing
+    /// the Go reader on every run.
+    /// </summary>
+    public sealed class GoldenFixturesTests
+    {
+        private static string Emit(InventorDocument fixture) =>
+            new RecipeYamlWriter().Write(new DocumentTranslator().Translate(fixture, new ExportReport()));
+
+        [Fact]
+        public void Empty_part_emits_minimal_valid_envelope()
+        {
+            string yaml = Emit(InventorSampleParts.EmptyPart());
+
+            Assert.Contains("schemaVersion: 2", yaml);
+            Assert.Contains("documentType: 1", yaml);
+            Assert.Contains("displayName: empty", yaml);
+            Assert.DoesNotContain("parameters:", yaml);
+        }
+
+        [Fact]
+        public void Parametric_part_emits_parameters_with_formula_reference()
+        {
+            string yaml = Emit(InventorSampleParts.ParametricPart());
+
+            Assert.Contains("name: width", yaml);
+            Assert.Contains("expression: 40 mm", yaml);
+            Assert.Contains("name: height", yaml);
+            Assert.Contains("expression: width * 2", yaml);
+        }
+    }
+}

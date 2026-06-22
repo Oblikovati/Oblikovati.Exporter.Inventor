@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Emits representative .opd golden files from the translator+writer so the round-trip
+       script can open them with the real oblikovati-cli (binds the C# emitter to the Go
+       reader, catching schema drift). Pass the output directory as the argument. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <RootNamespace>Oblikovati.Exporter.Inventor.GoldenGen</RootNamespace>
+    <AssemblyName>GoldenGen</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Model\Exporter.Inventor.Model.csproj" />
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Recipe\Exporter.Inventor.Recipe.csproj" />
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Translate\Exporter.Inventor.Translate.csproj" />
+    <ProjectReference Include="..\Fixtures\Exporter.Inventor.Fixtures.csproj" />
+  </ItemGroup>
+
+</Project>
