@@ -23,6 +23,10 @@ namespace Inventor
 
         public virtual SketchCircles SketchCircles => throw Stub.Error();
 
+        public virtual GeometricConstraints GeometricConstraints => throw Stub.Error();
+
+        public virtual DimensionConstraints DimensionConstraints => throw Stub.Error();
+
         /// <summary>The sketch origin in model space (maps to sketch 2D (0,0)).</summary>
         public virtual Point OriginPointGeometry => throw Stub.Error();
 

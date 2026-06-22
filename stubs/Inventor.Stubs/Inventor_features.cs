@@ -252,6 +252,9 @@ namespace Inventor
     public class Parameter
     {
         public virtual double _Value => throw Stub.Error();
+
+        /// <summary>The editable expression (a literal like "40 mm" or a reference like "width").</summary>
+        public virtual string Expression => throw Stub.Error();
     }
 
     /// <summary>Stub of one sketch profile; its Parent is the sketch it was built from.</summary>

@@ -33,8 +33,12 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly SketchLines _lines;
         private readonly SketchCircles _circles;
 
+        private readonly GeometricConstraints _constraints;
+        private readonly DimensionConstraints _dimensions;
+
         public FakePlanarSketch(
-            string name, Point origin, Line axis, Plane plane, IList<SketchLine> lines, IList<SketchCircle> circles)
+            string name, Point origin, Line axis, Plane plane, IList<SketchLine> lines, IList<SketchCircle> circles,
+            IList<GeometricConstraint>? constraints = null, IList<DimensionConstraint>? dimensions = null)
         {
             _name = name;
             _origin = origin;
@@ -42,6 +46,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _plane = plane;
             _lines = new FakeSketchLines(lines);
             _circles = new FakeSketchCircles(circles);
+            _constraints = new FakeGeometricConstraints(constraints ?? new List<GeometricConstraint>());
+            _dimensions = new FakeDimensionConstraints(dimensions ?? new List<DimensionConstraint>());
         }
 
         public override string Name => _name;
@@ -55,6 +61,10 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override SketchLines SketchLines => _lines;
 
         public override SketchCircles SketchCircles => _circles;
+
+        public override GeometricConstraints GeometricConstraints => _constraints;
+
+        public override DimensionConstraints DimensionConstraints => _dimensions;
 
         /// <summary>A unit square (side 4 cm) of four coincident lines on the XY origin plane.</summary>
         public static FakePlanarSketch Square()

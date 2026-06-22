@@ -89,6 +89,22 @@ Note the indexer asymmetry the real compile pinned: `PlanarSketches` is **object
 directly from Inventor (origin/axis/normal), not fitted, and 2D points are read in centimetres —
 Inventor's database unit, which is the recipe unit, so coordinates pass through unscaled.
 
+Explicit constraints/dimensions are also read (coincidence stays inferred from meeting endpoints):
+
+| Member | Reference signature |
+|---|---|
+| `PlanarSketch.GeometricConstraints` / `.DimensionConstraints` | the two collections (int-indexed, 1-based) |
+| `HorizontalConstraint`/`VerticalConstraint.Entity` | `SketchEntity` (cast `SketchLine`) |
+| `ParallelConstraint`/`PerpendicularConstraint.EntityOne`/`.EntityTwo` | `SketchEntity` (cast `SketchLine`) |
+| `TwoPointDistanceDimConstraint.PointOne`/`.PointTwo` / `.Parameter` | `SketchPoint` / `Parameter` |
+| `RadiusDimConstraint`/`DiameterDimConstraint.Entity` / `.Parameter` | `SketchEntity` (cast `SketchCircle`) / `Parameter` |
+| `Parameter.Expression` | `string` (the dimension's driving expression, e.g. "width") |
+
+Constraints/dimensions are matched by their concrete COM type (pattern matching), and their
+referenced entities are mapped to the IR curves/points **by COM identity** (one RCW per COM
+object), so a dimension links to the exact curve/endpoint it dimensions. Dimensions carry the
+parameter's `Expression`, restoring the parametric intent (e.g. a width dim driven by `width`).
+
 ## ✅ Feature + work-plane read surface (real-compile-verified on 2025/2026/2027)
 
 The M4 feature extractor compiles clean against all three genuine interops. Members used:
@@ -227,5 +243,5 @@ vertices' average and its normal its `Plane` geometry — a non-planar face is s
   point placement whose `Direction` is a planar `Face` is read. The other placements need their
   own definition walks.
 
-Also pending: Inventor's explicit sketch `GeometricConstraints`/`DimensionConstraints`,
-arcs/splines, and sweep/loft.
+Also pending: less-common sketch constraints (tangent/concentric/collinear/equal) + angle
+dimensions, arcs/splines, and sweep/loft.

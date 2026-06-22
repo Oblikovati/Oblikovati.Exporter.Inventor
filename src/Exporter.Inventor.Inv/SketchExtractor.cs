@@ -10,9 +10,10 @@ namespace Oblikovati.Exporter.Inventor.Inv
     /// Reads a part's planar sketches into the IR. The plane frame comes straight from Inventor
     /// (origin = sketch origin, X axis = the sketch axis line, Y = plane-normal × X), and 2D
     /// point geometry is read in centimetres. Lines and circles are extracted; coincidence is
-    /// inferred from endpoints that meet, so profiles close in Oblikovati. Inventor's explicit
-    /// geometric constraints and dimensions are the parametric refinement and are read in a
-    /// follow-up; the geometry here is positioned correctly.
+    /// inferred from endpoints that meet (so profiles close), and Inventor's explicit dimensions
+    /// (distance/radius/diameter, with their parameter expressions) and orientation constraints
+    /// (horizontal/vertical/parallel/perpendicular) are read too. Sketch entities are mapped to
+    /// IR curves/points by COM identity (the runtime caches one RCW per COM object).
     /// </summary>
     public static class SketchExtractor
     {
@@ -43,44 +44,171 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 YAxis = V(yAxis),
             };
 
+            // Maps from the Inventor sketch entities to the IR curves/points they became, so a
+            // constraint/dimension referencing an entity resolves to the right curve id / point.
+            var curveIds = new Dictionary<object, long>(RefComparer.Instance);
+            var pointRefs = new Dictionary<object, InventorPointRef>(RefComparer.Instance);
+
             long nextId = 1;
-            ExtractLines(sketch.SketchLines, result, ref nextId);
-            ExtractCircles(sketch.SketchCircles, result, ref nextId);
+            ExtractLines(sketch.SketchLines, result, curveIds, pointRefs, ref nextId);
+            ExtractCircles(sketch.SketchCircles, result, curveIds, pointRefs, ref nextId);
 
             InferCoincidences(result);
+            ExtractConstraints(sketch.GeometricConstraints, result, curveIds);
+            ExtractDimensions(sketch.DimensionConstraints, result, curveIds, pointRefs);
             return result.Curves.Count == 0 ? null : result;
         }
 
-        private static void ExtractLines(SketchLines lines, InventorSketch result, ref long nextId)
+        private static void ExtractLines(
+            SketchLines lines, InventorSketch result,
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs, ref long nextId)
         {
             for (int i = 1; i <= lines.Count; i++)
             {
                 SketchLine line = lines[i];
+                long id = nextId++;
                 result.Curves.Add(new InventorCurve
                 {
-                    Id = nextId++,
+                    Id = id,
                     Kind = InventorCurveKind.Line,
                     Start = P2(line.StartSketchPoint.Geometry),
                     End = P2(line.EndSketchPoint.Geometry),
                     Construction = line.Construction,
                 });
+                curveIds[line] = id;
+                pointRefs[line.StartSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Start);
+                pointRefs[line.EndSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.End);
             }
         }
 
-        private static void ExtractCircles(SketchCircles circles, InventorSketch result, ref long nextId)
+        private static void ExtractCircles(
+            SketchCircles circles, InventorSketch result,
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs, ref long nextId)
         {
             for (int i = 1; i <= circles.Count; i++)
             {
                 SketchCircle circle = circles[i];
+                long id = nextId++;
                 result.Curves.Add(new InventorCurve
                 {
-                    Id = nextId++,
+                    Id = id,
                     Kind = InventorCurveKind.Circle,
                     Center = P2(circle.CenterSketchPoint.Geometry),
                     Radius = circle.Radius,
                     Construction = circle.Construction,
                 });
+                curveIds[circle] = id;
+                pointRefs[circle.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
             }
+        }
+
+        // Reads the orientation/relation constraints (coincidence is already inferred). An operand
+        // that did not map to an extracted curve (e.g. an unsupported entity) skips the constraint.
+        private static void ExtractConstraints(
+            GeometricConstraints constraints, InventorSketch result, IDictionary<object, long> curveIds)
+        {
+            for (int i = 1; i <= constraints.Count; i++)
+            {
+                switch (constraints[i])
+                {
+                    case HorizontalConstraint h:
+                        AddOnCurve(result, InventorConstraintKind.Horizontal, curveIds, h.Entity);
+                        break;
+                    case VerticalConstraint v:
+                        AddOnCurve(result, InventorConstraintKind.Vertical, curveIds, v.Entity);
+                        break;
+                    case ParallelConstraint p:
+                        AddBetweenCurves(result, InventorConstraintKind.Parallel, curveIds, p.EntityOne, p.EntityTwo);
+                        break;
+                    case PerpendicularConstraint pp:
+                        AddBetweenCurves(result, InventorConstraintKind.Perpendicular, curveIds, pp.EntityOne, pp.EntityTwo);
+                        break;
+                }
+            }
+        }
+
+        private static void ExtractDimensions(
+            DimensionConstraints dimensions, InventorSketch result,
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs)
+        {
+            for (int i = 1; i <= dimensions.Count; i++)
+            {
+                switch (dimensions[i])
+                {
+                    case TwoPointDistanceDimConstraint d:
+                        AddDistance(result, pointRefs, d);
+                        break;
+                    case RadiusDimConstraint r:
+                        AddCurveDimension(result, InventorDimensionKind.Radius, curveIds, r.Entity, r.Parameter);
+                        break;
+                    case DiameterDimConstraint dia:
+                        AddCurveDimension(result, InventorDimensionKind.Diameter, curveIds, dia.Entity, dia.Parameter);
+                        break;
+                }
+            }
+        }
+
+        private static void AddOnCurve(
+            InventorSketch result, InventorConstraintKind kind, IDictionary<object, long> curveIds, object entity)
+        {
+            if (curveIds.TryGetValue(entity, out long id))
+            {
+                var c = new InventorSketchConstraint { Kind = kind };
+                c.Curves.Add(id);
+                result.Constraints.Add(c);
+            }
+        }
+
+        private static void AddBetweenCurves(
+            InventorSketch result, InventorConstraintKind kind, IDictionary<object, long> curveIds, object a, object b)
+        {
+            if (curveIds.TryGetValue(a, out long ida) && curveIds.TryGetValue(b, out long idb))
+            {
+                var c = new InventorSketchConstraint { Kind = kind };
+                c.Curves.Add(ida);
+                c.Curves.Add(idb);
+                result.Constraints.Add(c);
+            }
+        }
+
+        private static void AddDistance(
+            InventorSketch result, IDictionary<object, InventorPointRef> pointRefs, TwoPointDistanceDimConstraint d)
+        {
+            if (pointRefs.TryGetValue(d.PointOne, out InventorPointRef a) &&
+                pointRefs.TryGetValue(d.PointTwo, out InventorPointRef b))
+            {
+                var dim = new InventorSketchDimension
+                {
+                    Kind = InventorDimensionKind.Distance,
+                    Expression = d.Parameter.Expression,
+                };
+                dim.Points.Add(a);
+                dim.Points.Add(b);
+                result.Dimensions.Add(dim);
+            }
+        }
+
+        private static void AddCurveDimension(
+            InventorSketch result, InventorDimensionKind kind,
+            IDictionary<object, long> curveIds, object entity, Parameter parameter)
+        {
+            if (curveIds.TryGetValue(entity, out long id))
+            {
+                var dim = new InventorSketchDimension { Kind = kind, Expression = parameter.Expression };
+                dim.Curves.Add(id);
+                result.Dimensions.Add(dim);
+            }
+        }
+
+        // Reference-equality dictionary so the same COM entity (one RCW per COM object) resolves
+        // to the curve/point it became, independent of value equality.
+        private sealed class RefComparer : IEqualityComparer<object>
+        {
+            public static readonly RefComparer Instance = new RefComparer();
+
+            bool IEqualityComparer<object>.Equals(object x, object y) => ReferenceEquals(x, y);
+
+            public int GetHashCode(object obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
         }
 
         // Emit a coincident constraint for each pair of line endpoints that meet, so the profile
