@@ -94,5 +94,20 @@ namespace Oblikovati.Exporter.Inventor.Tests
             Assert.Contains("kind: circular-pattern", Emit(InventorSampleParts.CircularPatternPart()));
             Assert.Contains("kind: mirror", Emit(InventorSampleParts.MirrorPart()));
         }
+
+        [Fact]
+        public void Dress_up_parts_emit_geometric_edge_and_face_descriptors()
+        {
+            string fillet = Emit(InventorSampleParts.FilletedBoxPart());
+            Assert.Contains("kind: fillet", fillet);
+            Assert.Contains("geomEdges:", fillet);
+            Assert.Contains("midpoint:", fillet);
+
+            string hole = Emit(InventorSampleParts.HoledBoxPart());
+            Assert.Contains("kind: hole", hole);
+            Assert.Contains("geomFace:", hole);
+
+            Assert.Contains("geomFaces:", Emit(InventorSampleParts.ShelledBoxPart()));
+        }
     }
 }

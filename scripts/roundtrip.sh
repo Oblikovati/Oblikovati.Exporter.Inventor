@@ -17,12 +17,17 @@ OUT="$(mktemp -d)"
 # physicalProperties measures the faceted body, so it gets a wider band).
 declare -A EXPECT_VOL=(
     [box.opd]=60
-    [revolve.opd]=75.398         # washer: 24π (R=4, r=2, h=2)
-    [rect-pattern.opd]=180        # 3 × 60
-    [mirror.opd]=120              # 2 × 60
-    [circular-pattern.opd]=240    # 4 × 60
+    [revolve.opd]=75.398          # washer: 24π (R=4, r=2, h=2)
+    [rect-pattern.opd]=180         # 3 × 60
+    [mirror.opd]=120               # 2 × 60
+    [circular-pattern.opd]=240     # 4 × 60
+    [filleted-box.opd]=59.73       # 60 − 0.5²(1−π/4)·5 (edge descriptor bound, ADR-0040)
+    [chamfered-box.opd]=59.375     # 60 − 0.5²/2·5
+    [shelled-box.opd]=33           # 60 − 3×2×4.5 cavity (top face descriptor bound)
+    [holed-box.opd]=58.43          # 60 − π·0.5²·2 (placement-face descriptor bound)
 )
-declare -A EXPECT_TOL=( [revolve.opd]=0.02 )
+# Curved-surface results read the faceted body, so they get a wider band.
+declare -A EXPECT_TOL=( [revolve.opd]=0.02 [filleted-box.opd]=0.02 [holed-box.opd]=0.02 )
 
 dotnet run --project "$ROOT/tools/GoldenGen" -c Release -- "$OUT"
 

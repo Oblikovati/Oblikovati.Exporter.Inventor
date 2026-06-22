@@ -31,6 +31,95 @@ namespace Oblikovati.Exporter.Inventor.Recipe
 
         [YamlMember(Alias = "mirror", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public MirrorData? Mirror { get; set; }
+
+        [YamlMember(Alias = "fillet", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public EdgeDressData? Fillet { get; set; }
+
+        [YamlMember(Alias = "chamfer", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public EdgeDressData? Chamfer { get; set; }
+
+        [YamlMember(Alias = "shell", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public FaceDressData? Shell { get; set; }
+
+        [YamlMember(Alias = "draft", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public FaceDressData? Draft { get; set; }
+
+        [YamlMember(Alias = "hole", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public HoleData? Hole { get; set; }
+    }
+
+    /// <summary>
+    /// A geometric edge descriptor (ADR-0040): the edge's midpoint and direction in centimetre
+    /// database units. The Oblikovati reader binds it to a body edge at recompute.
+    /// </summary>
+    public sealed class GeomEdgeRefData
+    {
+        [YamlMember(Alias = "midpoint")]
+        public double[] Midpoint { get; set; } = { 0, 0, 0 };
+
+        [YamlMember(Alias = "direction", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double[]? Direction { get; set; }
+    }
+
+    /// <summary>A geometric face descriptor (ADR-0040): centroid + outward normal (cm).</summary>
+    public sealed class GeomFaceRefData
+    {
+        [YamlMember(Alias = "centroid")]
+        public double[] Centroid { get; set; } = { 0, 0, 0 };
+
+        [YamlMember(Alias = "normal", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double[]? Normal { get; set; }
+    }
+
+    /// <summary>
+    /// An edge dress-up payload (fillet radius / chamfer distance). Mirrors EdgeDressData in
+    /// serialize_dressup.go. Edges are geometric descriptors; Value is the radius/distance (cm).
+    /// </summary>
+    public sealed class EdgeDressData
+    {
+        [YamlMember(Alias = "value")]
+        public double Value { get; set; }
+
+        [YamlMember(Alias = "geomEdges", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public IList<GeomEdgeRefData> GeomEdges { get; } = new List<GeomEdgeRefData>();
+    }
+
+    /// <summary>
+    /// A face dress-up payload (shell thickness / draft angle). Mirrors FaceDressData. Faces are
+    /// geometric descriptors; Value is the thickness (cm) or angle (radians).
+    /// </summary>
+    public sealed class FaceDressData
+    {
+        [YamlMember(Alias = "value")]
+        public double Value { get; set; }
+
+        [YamlMember(Alias = "pull", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double[]? Pull { get; set; }
+
+        [YamlMember(Alias = "geomFaces", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public IList<GeomFaceRefData> GeomFaces { get; } = new List<GeomFaceRefData>();
+    }
+
+    /// <summary>
+    /// A hole payload. Mirrors HoleData in serialize_solid.go. The placement face is a geometric
+    /// descriptor (geomFace). Diameter/depth are cm.
+    /// </summary>
+    public sealed class HoleData
+    {
+        [YamlMember(Alias = "diameter")]
+        public double Diameter { get; set; }
+
+        [YamlMember(Alias = "depth")]
+        public double Depth { get; set; }
+
+        [YamlMember(Alias = "throughAll", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public bool? ThroughAll { get; set; }
+
+        [YamlMember(Alias = "type")]
+        public string Type { get; set; } = "drilled";
+
+        [YamlMember(Alias = "geomFace", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public GeomFaceRefData? GeomFace { get; set; }
     }
 
     /// <summary>
