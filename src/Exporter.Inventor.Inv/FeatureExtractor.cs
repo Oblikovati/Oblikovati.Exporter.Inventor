@@ -30,6 +30,73 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractMirrors(features.MirrorFeatures, ir);
             DressUpExtractor.Extract(features, ir);
             ExtractLofts(features.LoftFeatures, ir);
+            ExtractSweeps(features.SweepFeatures, ir);
+        }
+
+        // Sweeps whose path is a chain of straight segments: each path entity's sketch line gives a
+        // 3D segment (oriented by OpposedToSketchEntity), chained into the path polyline. A path with
+        // a non-line entity (arc/spline) is skipped — its tessellation is a later step.
+        private static void ExtractSweeps(SweepFeatures sweeps, InventorDocument ir)
+        {
+            for (int i = 1; i <= sweeps.Count; i++)
+            {
+                SweepFeature sw = sweeps[i];
+                int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)sw.Profile.Parent).Name);
+                if (sketchIndex < 0)
+                {
+                    continue;
+                }
+
+                List<double[]>? path = BuildPath(sw.Path);
+                if (path == null || path.Count < 2)
+                {
+                    continue;
+                }
+
+                var sweep = new InventorSweep
+                {
+                    Name = sw.Name,
+                    ProfileSketchIndex = sketchIndex,
+                    ProfileIndex = 0,
+                    Operation = ToOperation(sw.Operation),
+                };
+                foreach (double[] p in path)
+                {
+                    sweep.Path.Add(p);
+                }
+
+                ir.Features.Add(sweep);
+            }
+        }
+
+        private static List<double[]>? BuildPath(Path path)
+        {
+            var points = new List<double[]>();
+            for (int i = 1; i <= path.Count; i++)
+            {
+                PathEntity entity = path[i];
+                if (!(entity.SketchEntity is SketchLine line))
+                {
+                    return null; // non-straight path segment -> skip the sweep for now
+                }
+
+                LineSegment segment = line.Geometry3d;
+                double[] a = P3(segment.StartPoint);
+                double[] b = P3(segment.EndPoint);
+                if (entity.OpposedToSketchEntity)
+                {
+                    (a, b) = (b, a);
+                }
+
+                if (points.Count == 0)
+                {
+                    points.Add(a);
+                }
+
+                points.Add(b);
+            }
+
+            return points;
         }
 
         // Lofts reference their section profiles' sketches by name; sweeps need the path polyline

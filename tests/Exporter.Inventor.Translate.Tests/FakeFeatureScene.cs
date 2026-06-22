@@ -21,6 +21,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly FaceDraftFeatures _drafts;
         private readonly HoleFeatures _holes;
         private readonly LoftFeatures _lofts;
+        private readonly SweepFeatures _sweeps;
 
         public FakePartFeatures(
             IList<ExtrudeFeature> extrudes,
@@ -33,7 +34,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<ShellFeature>? shells = null,
             IList<FaceDraftFeature>? drafts = null,
             IList<HoleFeature>? holes = null,
-            IList<LoftFeature>? lofts = null)
+            IList<LoftFeature>? lofts = null,
+            IList<SweepFeature>? sweeps = null)
         {
             _extrudes = new FakeExtrudeFeatures(extrudes);
             _revolves = new FakeRevolveFeatures(revolves ?? new List<RevolveFeature>());
@@ -46,6 +48,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _drafts = new FakeFaceDraftFeatures(drafts ?? new List<FaceDraftFeature>());
             _holes = new FakeHoleFeatures(holes ?? new List<HoleFeature>());
             _lofts = new FakeLoftFeatures(lofts ?? new List<LoftFeature>());
+            _sweeps = new FakeSweepFeatures(sweeps ?? new List<SweepFeature>());
         }
 
         public override ExtrudeFeatures ExtrudeFeatures => _extrudes;
@@ -69,6 +72,79 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override HoleFeatures HoleFeatures => _holes;
 
         public override LoftFeatures LoftFeatures => _lofts;
+
+        public override SweepFeatures SweepFeatures => _sweeps;
+    }
+
+    public sealed class FakeSweepFeatures : SweepFeatures
+    {
+        private readonly IList<SweepFeature> _items;
+        public FakeSweepFeatures(IList<SweepFeature> items) => _items = items;
+        public override int Count => _items.Count;
+        public override SweepFeature this[object index] => _items[(int)index - 1];
+    }
+
+    /// <summary>A sweep of a profile on a named sketch along a straight-segment path (3D points).</summary>
+    public sealed class FakeSweepFeature : SweepFeature
+    {
+        private readonly string _name;
+        private readonly Profile _profile;
+        private readonly Path _path;
+        public FakeSweepFeature(string name, string profileSketchName, double[][] pathPoints)
+        {
+            _name = name;
+            _profile = new FakeProfile(profileSketchName);
+            _path = new FakePath(pathPoints);
+        }
+        public override string Name => _name;
+        public override PartFeatureOperationEnum Operation => PartFeatureOperationEnum.kNewBodyOperation;
+        public override Profile Profile => _profile;
+        public override Path Path => _path;
+    }
+
+    /// <summary>A path of straight segments built from a point polyline.</summary>
+    public sealed class FakePath : Path
+    {
+        private readonly IList<PathEntity> _entities;
+        public FakePath(double[][] points)
+        {
+            _entities = new List<PathEntity>();
+            for (int i = 0; i + 1 < points.Length; i++)
+            {
+                _entities.Add(new FakePathEntity(points[i], points[i + 1]));
+            }
+        }
+        public override int Count => _entities.Count;
+        public override PathEntity this[int index] => _entities[index - 1];
+    }
+
+    public sealed class FakePathEntity : PathEntity
+    {
+        private readonly SketchLine _line;
+        public FakePathEntity(double[] a, double[] b) => _line = new FakePathLine(a, b);
+        public override object SketchEntity => _line;
+        public override bool OpposedToSketchEntity => false;
+    }
+
+    /// <summary>A sketch line that only needs its 3D geometry (for a sweep path segment).</summary>
+    public sealed class FakePathLine : SketchLine
+    {
+        private readonly LineSegment _geometry;
+        public FakePathLine(double[] a, double[] b) => _geometry = new FakeLineSegment(a, b);
+        public override LineSegment Geometry3d => _geometry;
+    }
+
+    public sealed class FakeLineSegment : LineSegment
+    {
+        private readonly Point _start;
+        private readonly Point _end;
+        public FakeLineSegment(double[] a, double[] b)
+        {
+            _start = new FakePoint(a[0], a[1], a[2]);
+            _end = new FakePoint(b[0], b[1], b[2]);
+        }
+        public override Point StartPoint => _start;
+        public override Point EndPoint => _end;
     }
 
     public sealed class FakeLoftFeatures : LoftFeatures

@@ -55,6 +55,8 @@ namespace Inventor
         public virtual HoleFeatures HoleFeatures => throw Stub.Error();
 
         public virtual LoftFeatures LoftFeatures => throw Stub.Error();
+
+        public virtual SweepFeatures SweepFeatures => throw Stub.Error();
     }
 
     /// <summary>Common base of the modelling features, exposing the Name a pattern reads.</summary>
