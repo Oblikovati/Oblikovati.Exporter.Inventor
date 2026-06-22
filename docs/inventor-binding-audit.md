@@ -2,12 +2,23 @@
 # Inventor binding audit
 
 The adapter compiles against a hand-written **facade stub** (`stubs/Inventor.Stubs`, assembly
-named `Autodesk.Inventor.Interop`) and binds the real interop at load time inside Inventor
-(reference-assembly model). With no Inventor install on the build machine, the binding cannot
-be compile-verified against the genuine assembly; this audit instead checks each member the
-adapter uses against the **Inventor .NET API contract reference** vendored in the workspace at
-`Oblikovati.Contracts/Oblikovati.Contracts.CSharp` (the authoritative interface shapes). The
-opt-in `binding-check` CI job performs the genuine-assembly compile once Inventor is available.
+named `Autodesk.Inventor.Interop`) for the no-install CI gate, and binds the real interop at
+load time inside Inventor (reference-assembly model).
+
+**The bindings are now compile-verified against the genuine Autodesk interop.** Autodesk
+publishes the Inventor Interop binaries for add-in developers
+([TS article](https://www.autodesk.com/support/technical/article/caas/tsarticles/ts/1r0objlzvLJeSDzxNV8b87.html)),
+so the `binding-check` CI job fetches them (`scripts/fetch-interop.sh`) and builds the add-in
+with `-p:UseInventorStubs=false` against **every supported version** on a stock runner:
+
+| Inventor | Interop | Real compile |
+|---|---|---|
+| 2025 | v29.3 | ✅ |
+| 2026 | v30.2 | ✅ |
+| 2027 | v31.0 | ✅ |
+
+The tables below additionally cross-check each member against the **Inventor .NET API contract
+reference** vendored at `Oblikovati.Contracts/Oblikovati.Contracts.CSharp`.
 
 ## ✅ Verified correct against the reference
 
@@ -37,11 +48,20 @@ opt-in `binding-check` CI job performs the genuine-assembly compile once Invento
 | `UnitsTypeEnum` values | guessed (11150/11154/11194…) | genuine constants (`kMillimeter=11269`, `kCentimeter=11268`, `kMeter=11270`, `kInch=11272`, `kFoot=11273`, `kRadian=11278`, `kDegree=11279`) |
 | `ApplicationAddInServer.Automation` | `object?` | `object` (non-nullable); impl returns `null!` |
 
-## ⚠️ Modelled compatibly, exact shape noted
+## ❌❌ Found and fixed by the REAL compile (the idealized C# reference missed these)
 
-| Member | Reference | Note |
+The contract reference models COM members as ordinary C# properties, so it could not reveal
+these interop quirks — only compiling against the genuine assembly did. All three were caught
+and fixed:
+
+| Area | Idealized reference said | Genuine interop (and the fix) |
 |---|---|---|
-| `UserParameters[i]` | `UserParameter this[object Index]` (1-based) | stub uses `Parameter this[int]`. The adapter's call (`parameters[i]`, `i` an int, result typed as `Parameter`) is **compatible with both**: int boxes into the `object` index, and `UserParameter` derives from `Parameter`. `UserParameter`-specific members are not needed yet. |
+| `UserParameters[i]` | returns `Parameter` | returns `UserParameter`, which is **not** implicitly a `Parameter` (separate COM interfaces). The adapter now reads `UserParameter` directly — which exposes `Name`/`Expression` itself — so no cast is needed. |
+| `Parameter`/`UserParameter`.`Units` | property `string Units { get; set; }` | **asymmetric COM accessors** (get → `string`, set → `object`), so it imports as a method, not a property. The adapter calls `get_Units()`. |
+| `Path` / `File` in the adapter | n/a | the `Inventor` namespace defines its own `Path` and `File` types, which collide with `System.IO` once `using Inventor;` is in scope. Fixed by aliasing `using IO = System.IO;`. |
+
+The stub was updated to mirror these real shapes (`UserParameters[object]` → `UserParameter`
+with `get_Units()`), so the stub-mode build and the real-mode build stay consistent.
 
 ## Not yet exercised
 

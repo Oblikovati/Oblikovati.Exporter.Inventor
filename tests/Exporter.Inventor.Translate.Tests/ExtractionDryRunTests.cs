@@ -19,10 +19,10 @@ namespace Oblikovati.Exporter.Inventor.Tests
         {
             var units = new FakeUnitsOfMeasure(
                 UnitsTypeEnum.kMillimeterLengthUnits, UnitsTypeEnum.kDegreeAngleUnits);
-            var ups = new List<Parameter>
+            var ups = new List<UserParameter>
             {
-                new FakeParameter("Width", "40 mm", "mm"),
-                new FakeParameter("Height", "Width * 2", "mm"),
+                new FakeUserParameter("Width", "40 mm", "mm"),
+                new FakeUserParameter("Height", "Width * 2", "mm"),
             };
             var doc = new FakePartDocument("bracket.ipt", @"C:\work\bracket.ipt", units, ups);
             var adapter = new InventorSessionAdapter(new FakeInventorApplication(doc));
