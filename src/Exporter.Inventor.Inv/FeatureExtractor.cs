@@ -29,6 +29,42 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractCircularPatterns(features.CircularPatternFeatures, ir);
             ExtractMirrors(features.MirrorFeatures, ir);
             DressUpExtractor.Extract(features, ir);
+            ExtractLofts(features.LoftFeatures, ir);
+        }
+
+        // Lofts reference their section profiles' sketches by name; sweeps need the path polyline
+        // evaluated (a later step), so only loft is read here.
+        private static void ExtractLofts(LoftFeatures lofts, InventorDocument ir)
+        {
+            for (int i = 1; i <= lofts.Count; i++)
+            {
+                LoftFeature l = lofts[i];
+                var loft = new InventorLoft { Name = l.Name, Operation = ToOperation(l.Operation) };
+                ObjectCollection sections = l.Sections;
+                bool resolved = true;
+                for (int j = 1; j <= sections.Count; j++)
+                {
+                    if (!(sections[j] is Profile profile))
+                    {
+                        resolved = false; // apex/point sections are a later step
+                        break;
+                    }
+
+                    int idx = SketchIndexOf(ir, ((PlanarSketch)profile.Parent).Name);
+                    if (idx < 0)
+                    {
+                        resolved = false;
+                        break;
+                    }
+
+                    loft.Sections.Add(new InventorLoftSection { SketchIndex = idx, ProfileIndex = 0 });
+                }
+
+                if (resolved && loft.Sections.Count >= 2)
+                {
+                    ir.Features.Add(loft);
+                }
+            }
         }
 
         private static void ExtractRectangularPatterns(RectangularPatternFeatures patterns, InventorDocument ir)

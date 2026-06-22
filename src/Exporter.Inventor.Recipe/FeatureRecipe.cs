@@ -46,6 +46,57 @@ namespace Oblikovati.Exporter.Inventor.Recipe
 
         [YamlMember(Alias = "hole", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public HoleData? Hole { get; set; }
+
+        [YamlMember(Alias = "sweep", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public SweepData? Sweep { get; set; }
+
+        [YamlMember(Alias = "loft", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public LoftData? Loft { get; set; }
+    }
+
+    /// <summary>
+    /// A sweep payload. Mirrors SweepData in serialize_sweep_loft.go: the profile (sketch + region
+    /// index) swept along a path given as a 3D-point polyline (cm).
+    /// </summary>
+    public sealed class SweepData
+    {
+        [YamlMember(Alias = "sketch")]
+        public int Sketch { get; set; }
+
+        [YamlMember(Alias = "profile")]
+        public int Profile { get; set; }
+
+        [YamlMember(Alias = "path")]
+        public IList<double[]> Path { get; } = new List<double[]>();
+
+        [YamlMember(Alias = "closed", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public bool? Closed { get; set; }
+
+        [YamlMember(Alias = "operation")]
+        public string Operation { get; set; } = "newBody";
+    }
+
+    /// <summary>One loft section: a profile (sketch + region index). Mirrors LoftSectionData.</summary>
+    public sealed class LoftSectionData
+    {
+        [YamlMember(Alias = "sketch")]
+        public int Sketch { get; set; }
+
+        [YamlMember(Alias = "profile")]
+        public int Profile { get; set; }
+    }
+
+    /// <summary>A loft payload. Mirrors LoftData: an ordered list of profile sections.</summary>
+    public sealed class LoftData
+    {
+        [YamlMember(Alias = "sections")]
+        public IList<LoftSectionData> Sections { get; } = new List<LoftSectionData>();
+
+        [YamlMember(Alias = "closed", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public bool? Closed { get; set; }
+
+        [YamlMember(Alias = "operation")]
+        public string Operation { get; set; } = "newBody";
     }
 
     /// <summary>

@@ -283,6 +283,67 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             Normal = new double[] { 0, 0, 1 },
         };
 
+        /// <summary>
+        /// A 1 cm-radius circle profile swept 10 cm straight along +Z, making a cylinder.
+        /// Volume = π·1²·10 ≈ 31.42 cm³ (faceted in the reader).
+        /// </summary>
+        public static InventorDocument SweepPart()
+        {
+            var doc = new InventorDocument { DisplayName = "sweep", Kind = InventorDocumentKind.Part };
+            doc.Sketches.Add(CircleSketch("Profile", 1, 0));
+            var sweep = new InventorSweep
+            {
+                Name = "Sweep1",
+                ProfileSketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = InventorOperation.NewBody,
+            };
+            sweep.Path.Add(new double[] { 0, 0, 0 });
+            sweep.Path.Add(new double[] { 0, 0, 10 });
+            doc.Features.Add(sweep);
+            return doc;
+        }
+
+        /// <summary>
+        /// A loft between two coaxial 1 cm-radius circles 10 cm apart, making a cylinder.
+        /// Volume ≈ 31.42 cm³ (faceted).
+        /// </summary>
+        public static InventorDocument LoftPart()
+        {
+            var doc = new InventorDocument { DisplayName = "loft", Kind = InventorDocumentKind.Part };
+            doc.Sketches.Add(CircleSketch("Bottom", 1, 0));
+            doc.Sketches.Add(CircleSketch("Top", 1, 10));
+            var loft = new InventorLoft { Name = "Loft1", Operation = InventorOperation.NewBody };
+            loft.Sections.Add(new InventorLoftSection { SketchIndex = 0, ProfileIndex = 0 });
+            loft.Sections.Add(new InventorLoftSection { SketchIndex = 1, ProfileIndex = 0 });
+            doc.Features.Add(loft);
+            return doc;
+        }
+
+        // A fixed circle of the given radius (cm) on a plane offset originZ along Z, with a
+        // diameter dimension. The 2D center is the origin, so it sits at (0,0,originZ) in model space.
+        private static InventorSketch CircleSketch(string name, double radius, double originZ)
+        {
+            var sketch = new InventorSketch { Name = name, Origin = new double[] { 0, 0, originZ } };
+            const long c0 = 1;
+            sketch.Curves.Add(new InventorCurve
+            {
+                Id = c0,
+                Kind = InventorCurveKind.Circle,
+                Center = new double[] { 0, 0 },
+                Radius = radius,
+            });
+            sketch.Constraints.Add(Fix(c0, InventorCurvePointRole.Center));
+            var dim = new InventorSketchDimension
+            {
+                Kind = InventorDimensionKind.Diameter,
+                Expression = (radius * 20) + " mm",
+            };
+            dim.Curves.Add(c0);
+            sketch.Dimensions.Add(dim);
+            return sketch;
+        }
+
         // A fully-constrained 4×3 cm rectangle offset dx in X, extruded 5 cm into a 60 cm³ box.
         private static InventorDocument MakeBox(string name, double dx)
         {
