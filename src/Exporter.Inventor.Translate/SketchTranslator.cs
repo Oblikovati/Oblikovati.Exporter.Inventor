@@ -85,6 +85,12 @@ namespace Oblikovati.Exporter.Inventor.Translate
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Center)));
                     entity.Radius = curve.Radius;
                     break;
+                case InventorCurveKind.Ellipse:
+                    entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Center)));
+                    entity.MajorAxis = (double[])curve.MajorAxis.Clone();
+                    entity.MajorRadius = curve.MajorRadius;
+                    entity.MinorRadius = curve.MinorRadius;
+                    break;
                 case InventorCurveKind.Arc:
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Center)));
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Start)));
@@ -204,6 +210,7 @@ namespace Oblikovati.Exporter.Inventor.Translate
             InventorCurveKind.Line => "line",
             InventorCurveKind.Circle => "circle",
             InventorCurveKind.Arc => "arc",
+            InventorCurveKind.Ellipse => "ellipse",
             _ => "spline",
         };
 

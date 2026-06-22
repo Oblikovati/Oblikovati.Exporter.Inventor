@@ -86,6 +86,7 @@ namespace Oblikovati.Exporter.Inventor.Translate
                     yield return InventorCurvePointRole.End;
                     break;
                 case InventorCurveKind.Circle:
+                case InventorCurveKind.Ellipse:
                     yield return InventorCurvePointRole.Center;
                     break;
                 default: // Arc

@@ -38,12 +38,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly SketchArcs _arcs;
         private readonly SketchSplines _splines;
         private readonly SketchControlPointSplines _ctrlSplines;
+        private readonly SketchEllipses _ellipses;
 
         public FakePlanarSketch(
             string name, Point origin, Line axis, Plane plane, IList<SketchLine> lines, IList<SketchCircle> circles,
             IList<GeometricConstraint>? constraints = null, IList<DimensionConstraint>? dimensions = null,
             IList<SketchArc>? arcs = null, IList<SketchSpline>? splines = null,
-            IList<SketchControlPointSpline>? controlPointSplines = null)
+            IList<SketchControlPointSpline>? controlPointSplines = null, IList<SketchEllipse>? ellipses = null)
         {
             _name = name;
             _origin = origin;
@@ -57,6 +58,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _splines = new FakeSketchSplines(splines ?? new List<SketchSpline>());
             _ctrlSplines = new FakeSketchControlPointSplines(
                 controlPointSplines ?? new List<SketchControlPointSpline>());
+            _ellipses = new FakeSketchEllipses(ellipses ?? new List<SketchEllipse>());
         }
 
         public override string Name => _name;
@@ -80,6 +82,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override SketchSplines SketchSplines => _splines;
 
         public override SketchControlPointSplines SketchControlPointSplines => _ctrlSplines;
+
+        public override SketchEllipses SketchEllipses => _ellipses;
 
         /// <summary>A unit square (side 4 cm) of four coincident lines on the XY origin plane.</summary>
         public static FakePlanarSketch Square()
@@ -199,6 +203,43 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override SketchPoint get_ControlPoint(int index) => _controlPoints[index - 1];
         public override bool IsClosed => _closed;
         public override bool Construction => false;
+    }
+
+    public sealed class FakeSketchEllipses : SketchEllipses
+    {
+        private readonly IList<SketchEllipse> _items;
+        public FakeSketchEllipses(IList<SketchEllipse> items) => _items = items;
+        public override int Count => _items.Count;
+        public override SketchEllipse this[int index] => _items[index - 1];
+    }
+
+    public sealed class FakeSketchEllipse : SketchEllipse
+    {
+        private readonly SketchPoint _center;
+        private readonly UnitVector2d _major;
+        private readonly double _majorR;
+        private readonly double _minorR;
+        public FakeSketchEllipse(double cx, double cy, double[] majorAxis, double majorR, double minorR)
+        {
+            _center = new FakeSketchPoint(cx, cy);
+            _major = new FakeUnitVector2d(majorAxis[0], majorAxis[1]);
+            _majorR = majorR;
+            _minorR = minorR;
+        }
+        public override SketchPoint CenterSketchPoint => _center;
+        public override UnitVector2d MajorAxisVector => _major;
+        public override double MajorRadius => _majorR;
+        public override double MinorRadius => _minorR;
+        public override bool Construction => false;
+    }
+
+    public sealed class FakeUnitVector2d : UnitVector2d
+    {
+        private readonly double _x;
+        private readonly double _y;
+        public FakeUnitVector2d(double x, double y) { _x = x; _y = y; }
+        public override double X => _x;
+        public override double Y => _y;
     }
 
     public sealed class FakeSketchArcs : SketchArcs

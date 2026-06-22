@@ -34,6 +34,9 @@ declare -A EXPECT_TOL=(
     [revolve.opd]=0.02 [filleted-box.opd]=0.02 [holed-box.opd]=0.02 [sweep.opd]=0.02 [loft.opd]=0.02
     [arc-extrude.opd]=0.02
 )
+# Goldens validated by the open check only (no DOF assertion): an ellipse cannot be fully
+# constrained — Oblikovati has no ellipse radius dimension to pin its radii (as with arc radii).
+declare -A OPEN_ONLY=( [ellipse.opd]=1 )
 
 dotnet run --project "$ROOT/tools/GoldenGen" -c Release -- "$OUT"
 
@@ -49,7 +52,7 @@ for f in "$OUT"/*.opd "$OUT"/*.oad; do
     fi
     # 2) For parts, every sketch is fully constrained (DOF 0) with a closed profile.
     #    Assemblies (.oad) have no part sketch context, so the open check suffices.
-    if [[ "$f" == *.oad ]]; then
+    if [[ "$f" == *.oad ]] || [ -n "${OPEN_ONLY[$name]:-}" ]; then
         echo "OK   $name"
         continue
     fi

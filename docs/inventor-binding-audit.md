@@ -82,6 +82,7 @@ The M3 sketch extractor compiles clean against all three genuine interops. Membe
 | `PlanarSketch.SketchArcs` → `SketchArc.CenterSketchPoint`/`.StartSketchPoint`/`.EndSketchPoint`/`.SweepAngle` | center/start/end + sweep sense (positive = CCW); arc ends join a profile (coincidence inferred) |
 | `PlanarSketch.SketchSplines` → `SketchSpline.FitPointCount`/`get_FitPoint(i)`/`.Closed` | a fit-spline's ordered points (`get_FitPoint` is a parameterized COM property → method, 1-based) + closed flag |
 | `PlanarSketch.SketchControlPointSplines` → `SketchControlPointSpline.ControlPointCount`/`get_ControlPoint(i)`/`.IsClosed` | a control-point spline's control polygon (emitted as a spline with `fit = false`); note `IsClosed`, not `Closed` |
+| `PlanarSketch.SketchEllipses` → `SketchEllipse.CenterSketchPoint`/`.MajorAxisVector`/`.MajorRadius`/`.MinorRadius` | a full ellipse: centre + major-axis `UnitVector2d` + the two radii |
 | `SketchPoint.Geometry` | `Point2d` (sketch coords, cm) |
 | `Point2d.X/.Y`, `Point.X/.Y/.Z` | `double` |
 | `Plane.Normal`, `Line.Direction` | `UnitVector` |
@@ -267,4 +268,6 @@ tessellation is a later step. Both are also volume-round-tripped (a ~31.4 cm³ c
   point placement whose `Direction` is a planar `Face` is read.
 
 Also pending: less-common sketch constraints (tangent/concentric/collinear/equal) + angle
-dimensions; ellipses; and arc/spline sweep paths.
+dimensions; elliptical arcs (full ellipses are read); and arc/spline sweep paths. A full ellipse
+round-trips by the open check only — Oblikovati has no ellipse radius dimension, so it cannot be
+driven to DOF 0 (same limitation as an arc radius).
