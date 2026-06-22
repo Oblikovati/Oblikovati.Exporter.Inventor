@@ -222,13 +222,18 @@ interops. Members used:
 |---|---|
 | `PartFeatures.FaceDraftFeatures` / `.HoleFeatures` | the two collections (object-indexed, 1-based) |
 | `FaceDraftFeature._DraftAngle` / `._InputFaces` / `._PullDirection` | `Parameter` / `FaceCollection` / `object` (strongly-typed COM accessors) |
-| `HoleFeature.HoleDiameter` / `.Depth` / `.ExtentType` / `.PlacementDefinition` | `Parameter` / `double` / `PartFeatureExtentEnum` (`kThroughAllExtent`) / `HolePlacementDefinition` |
+| `HoleFeature.HoleDiameter` / `.Depth` / `.ExtentType` / `.PlacementDefinition` / `.HoleCenterPoints` | `Parameter` / `double` / `PartFeatureExtentEnum` (`kThroughAllExtent`) / `HolePlacementDefinition` / `ObjectCollection` |
 | `PointHolePlacementDefinition.Direction` (cast `Face`) | the planar face the hole drills into |
+| `SketchPoint.Geometry3d` / `WorkPoint.Point` / `Vertex.Point` → `Point` | a centre point's model-space 3D position |
 
 A draft's pull direction is resolved by the same type-dispatch as patterns (planar face/work
 plane normal, or work axis/edge direction); its faces use the shared face-descriptor logic. A
 hole's placement face is the `Direction` entity of a `PointHolePlacementDefinition` when it is a
-planar `Face`; sketch/linear/concentric hole placements are skipped (reported) for now.
+planar `Face`. Each drill centre is read from `HoleCenterPoints` (universal across placement
+types) and emitted as the recipe's explicit `center`, with one Oblikovati hole per centre (so a
+sketch-placed hole drilling several bores expands to several holes); a hole with no resolvable
+centre falls back to the face centroid. Sketch/linear/concentric placements still need their
+*placement face* resolved to a body face before they export — that part is reported for now.
 
 The fillet/chamfer/shell members used:
 
@@ -272,8 +277,10 @@ volume-round-tripped (a ~31.4 cm³ cylinder).
 
 ## Not yet exercised (live extraction)
 
-- **hole placement variants**: sketch-, linear-, and concentric-placed holes are skipped; only a
-  point placement whose `Direction` is a planar `Face` is read.
+- **non-point hole placement faces**: a hole's drill *centres* are now read for any placement
+  type (via `HoleCenterPoints`), but sketch-/linear-/concentric-placed holes still need their
+  *placement face* mapped to a body face before they export (point placements give it via
+  `Direction`). This needs live Inventor to validate the body-face search.
 
 Also pending: explicit coincidence (coincidence is inferred from meeting endpoints, which covers
 profile closure). Ellipses and elliptical arcs round-trip by the open check only — Oblikovati has

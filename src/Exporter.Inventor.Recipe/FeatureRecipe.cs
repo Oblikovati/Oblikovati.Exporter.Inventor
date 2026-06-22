@@ -171,6 +171,9 @@ namespace Oblikovati.Exporter.Inventor.Recipe
 
         [YamlMember(Alias = "geomFace", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public GeomFaceRefData? GeomFace { get; set; }
+
+        [YamlMember(Alias = "center", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double[]? Center { get; set; }
     }
 
     /// <summary>

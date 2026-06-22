@@ -61,21 +61,72 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 InventorFaceDescriptor? placement = PlacementFace(h.PlacementDefinition);
                 if (placement == null)
                 {
-                    continue; // only point-on-planar-face placement is read for now
+                    continue; // placement face must resolve to a planar body face
                 }
 
+                AddHoles(ir, h, placement);
+            }
+        }
+
+        // One Oblikovati hole per drill centre this feature places (a sketch placement drills
+        // several). The centre fixes the exact position; an unreadable centre falls back to the
+        // face centroid (Center left null). When no centre resolves at all, a single centroid hole.
+        private static void AddHoles(InventorDocument ir, HoleFeature h, InventorFaceDescriptor placement)
+        {
+            List<double[]> centers = HoleCenters(h.HoleCenterPoints);
+            bool through = h.ExtentType == PartFeatureExtentEnum.kThroughAllExtent;
+            if (centers.Count == 0)
+            {
+                centers.Add(null!); // no resolvable centre -> one hole at the face centroid
+            }
+
+            foreach (double[] center in centers)
+            {
                 ir.Features.Add(new InventorHole
                 {
                     Name = h.Name,
                     PlacementFace = placement,
                     DiameterCm = h.HoleDiameter._Value,
                     DepthCm = h.Depth,
-                    ThroughAll = h.ExtentType == PartFeatureExtentEnum.kThroughAllExtent,
+                    ThroughAll = through,
+                    Center = center,
                 });
             }
         }
 
-        // The planar face a point-placed hole drills into (its Direction entity).
+        // The 3D model-space centres of a hole feature's centre points (any placement type).
+        private static List<double[]> HoleCenters(ObjectCollection points)
+        {
+            var centers = new List<double[]>();
+            for (int i = 1; i <= points.Count; i++)
+            {
+                double[]? p = CenterPoint(points[i]);
+                if (p != null)
+                {
+                    centers.Add(p);
+                }
+            }
+
+            return centers;
+        }
+
+        // A centre point's 3D position: a sketch point, work point or B-rep vertex.
+        private static double[]? CenterPoint(object point)
+        {
+            switch (point)
+            {
+                case SketchPoint sketchPoint:
+                    return P3(sketchPoint.Geometry3d);
+                case WorkPoint workPoint:
+                    return P3(workPoint.Point);
+                case Vertex vertex:
+                    return P3(vertex.Point);
+                default:
+                    return null;
+            }
+        }
+
+        // The planar face a hole drills into (a point placement's Direction entity).
         private static InventorFaceDescriptor? PlacementFace(HolePlacementDefinition placement)
         {
             if (placement is PointHolePlacementDefinition point && point.Direction is Face face)

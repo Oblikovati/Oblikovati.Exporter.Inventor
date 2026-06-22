@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 using System.Collections.Generic;
+using System.Linq;
 using Inventor;
 
 namespace Oblikovati.Exporter.Inventor.Tests
@@ -218,13 +219,17 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly double _depth;
         private readonly bool _throughAll;
         private readonly HolePlacementDefinition _placement;
-        public FakeHoleFeature(string name, double diameter, double depth, bool throughAll, Face placementFace)
+        private readonly ObjectCollection _centers;
+        public FakeHoleFeature(string name, double diameter, double depth, bool throughAll, Face placementFace, double[][]? centers = null)
         {
             _name = name;
             _diameter = diameter;
             _depth = depth;
             _throughAll = throughAll;
             _placement = new FakePointHolePlacementDefinition(placementFace);
+            object[] points = (centers ?? System.Array.Empty<double[]>())
+                .Select(c => (object)new FakeHoleCenterPoint(c[0], c[1], c[2])).ToArray();
+            _centers = new FakeObjectList(points);
         }
         public override string Name => _name;
         public override Parameter HoleDiameter => new FakeDistanceParameter(_diameter);
@@ -232,6 +237,15 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override PartFeatureExtentEnum ExtentType =>
             _throughAll ? PartFeatureExtentEnum.kThroughAllExtent : PartFeatureExtentEnum.kDistanceExtent;
         public override HolePlacementDefinition PlacementDefinition => _placement;
+        public override ObjectCollection HoleCenterPoints => _centers;
+    }
+
+    /// <summary>A hole-centre sketch point that carries its model-space 3D position.</summary>
+    public sealed class FakeHoleCenterPoint : SketchPoint
+    {
+        private readonly Point _point;
+        public FakeHoleCenterPoint(double x, double y, double z) => _point = new FakePoint(x, y, z);
+        public override Point Geometry3d => _point;
     }
 
     public sealed class FakePointHolePlacementDefinition : PointHolePlacementDefinition

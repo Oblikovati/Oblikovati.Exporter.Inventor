@@ -269,6 +269,25 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        // A 60 cm³ box with a Ø1×2 blind hole drilled at an explicit OFF-centre point (1,1) on
+        // the top face — not the face centroid (2,1.5). The bore is fully inside, so the volume
+        // matches a centred hole (58.43): the round-trip proves the reader accepts `center`.
+        public static InventorDocument OffsetHoledBoxPart()
+        {
+            InventorDocument doc = BoxPart();
+            doc.DisplayName = "offset-holed-box";
+            doc.Features.Add(new InventorHole
+            {
+                Name = "Hole1",
+                PlacementFace = TopFace(),
+                DiameterCm = 1,
+                DepthCm = 2,
+                ThroughAll = false,
+                Center = new double[] { 1, 1, 5 },
+            });
+            return doc;
+        }
+
         // The box's vertical edge at corner (x, y), running z 0→5: midpoint + Z direction.
         private static InventorEdgeDescriptor VerticalEdge(double x, double y) => new InventorEdgeDescriptor
         {
