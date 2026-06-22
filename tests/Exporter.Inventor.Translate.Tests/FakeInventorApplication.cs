@@ -120,13 +120,14 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<ShellFeature>? shells = null,
             IList<FaceDraftFeature>? drafts = null,
             IList<HoleFeature>? holes = null,
-            IList<LoftFeature>? lofts = null)
+            IList<LoftFeature>? lofts = null,
+            IList<SweepFeature>? sweeps = null)
         {
             _parameters = new FakeParameters(new FakeUserParameters(userParameters));
             _sketches = new FakePlanarSketches(sketches ?? new List<PlanarSketch>());
             _features = new FakePartFeatures(
                 extrudes ?? new List<ExtrudeFeature>(), revolves, rectPatterns, circPatterns, mirrors,
-                fillets, chamfers, shells, drafts, holes, lofts);
+                fillets, chamfers, shells, drafts, holes, lofts, sweeps);
             _workPlanes = new FakeWorkPlanes(workPlanes ?? new List<WorkPlane>());
         }
 
@@ -177,14 +178,15 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<ShellFeature>? shells = null,
             IList<FaceDraftFeature>? drafts = null,
             IList<HoleFeature>? holes = null,
-            IList<LoftFeature>? lofts = null)
+            IList<LoftFeature>? lofts = null,
+            IList<SweepFeature>? sweeps = null)
         {
             _displayName = displayName;
             _fullFileName = fullFileName;
             _units = units;
             _definition = new FakePartComponentDefinition(
                 userParameters, sketches, extrudes, workPlanes, revolves, rectPatterns, circPatterns, mirrors,
-                fillets, chamfers, shells, drafts, holes, lofts);
+                fillets, chamfers, shells, drafts, holes, lofts, sweeps);
         }
 
         public override DocumentTypeEnum DocumentType => DocumentTypeEnum.kPartDocumentObject;

@@ -53,6 +53,9 @@ namespace Inventor
         public virtual SketchPoint EndSketchPoint => throw Stub.Error();
 
         public virtual bool Construction => throw Stub.Error();
+
+        /// <summary>The line's model-space geometry (used to read a sweep path segment in 3D).</summary>
+        public virtual LineSegment Geometry3d => throw Stub.Error();
     }
 
     /// <summary>Stub of the sketch-circles collection (int-indexed, 1-based).</summary>
