@@ -15,19 +15,28 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly RectangularPatternFeatures _rectPatterns;
         private readonly CircularPatternFeatures _circPatterns;
         private readonly MirrorFeatures _mirrors;
+        private readonly FilletFeatures _fillets;
+        private readonly ChamferFeatures _chamfers;
+        private readonly ShellFeatures _shells;
 
         public FakePartFeatures(
             IList<ExtrudeFeature> extrudes,
             IList<RevolveFeature>? revolves = null,
             IList<RectangularPatternFeature>? rectPatterns = null,
             IList<CircularPatternFeature>? circPatterns = null,
-            IList<MirrorFeature>? mirrors = null)
+            IList<MirrorFeature>? mirrors = null,
+            IList<FilletFeature>? fillets = null,
+            IList<ChamferFeature>? chamfers = null,
+            IList<ShellFeature>? shells = null)
         {
             _extrudes = new FakeExtrudeFeatures(extrudes);
             _revolves = new FakeRevolveFeatures(revolves ?? new List<RevolveFeature>());
             _rectPatterns = new FakeRectangularPatternFeatures(rectPatterns ?? new List<RectangularPatternFeature>());
             _circPatterns = new FakeCircularPatternFeatures(circPatterns ?? new List<CircularPatternFeature>());
             _mirrors = new FakeMirrorFeatures(mirrors ?? new List<MirrorFeature>());
+            _fillets = new FakeFilletFeatures(fillets ?? new List<FilletFeature>());
+            _chamfers = new FakeChamferFeatures(chamfers ?? new List<ChamferFeature>());
+            _shells = new FakeShellFeatures(shells ?? new List<ShellFeature>());
         }
 
         public override ExtrudeFeatures ExtrudeFeatures => _extrudes;
@@ -39,6 +48,12 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override CircularPatternFeatures CircularPatternFeatures => _circPatterns;
 
         public override MirrorFeatures MirrorFeatures => _mirrors;
+
+        public override FilletFeatures FilletFeatures => _fillets;
+
+        public override ChamferFeatures ChamferFeatures => _chamfers;
+
+        public override ShellFeatures ShellFeatures => _shells;
     }
 
     public sealed class FakeRevolveFeatures : RevolveFeatures
