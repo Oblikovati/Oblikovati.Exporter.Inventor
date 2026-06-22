@@ -31,6 +31,8 @@ namespace Inventor
 
         public virtual SketchEllipses SketchEllipses => throw Stub.Error();
 
+        public virtual SketchEllipticalArcs SketchEllipticalArcs => throw Stub.Error();
+
         public virtual GeometricConstraints GeometricConstraints => throw Stub.Error();
 
         public virtual DimensionConstraints DimensionConstraints => throw Stub.Error();
@@ -175,6 +177,35 @@ namespace Inventor
         public virtual double MajorRadius => throw Stub.Error();
 
         public virtual double MinorRadius => throw Stub.Error();
+
+        public virtual bool Construction => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the elliptical-arcs collection (int-indexed, 1-based).</summary>
+    public class SketchEllipticalArcs
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual SketchEllipticalArc this[int index] => throw Stub.Error();
+    }
+
+    /// <summary>
+    /// Stub of one elliptical arc: an ellipse (centre + major axis + radii) bounded by a start
+    /// angle and a sweep (the end angle is start + sweep, radians).
+    /// </summary>
+    public class SketchEllipticalArc
+    {
+        public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
+
+        public virtual UnitVector2d MajorAxisVector => throw Stub.Error();
+
+        public virtual double MajorRadius => throw Stub.Error();
+
+        public virtual double MinorRadius => throw Stub.Error();
+
+        public virtual double StartAngle => throw Stub.Error();
+
+        public virtual double SweepAngle => throw Stub.Error();
 
         public virtual bool Construction => throw Stub.Error();
     }

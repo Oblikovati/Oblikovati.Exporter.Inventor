@@ -36,6 +36,7 @@ namespace Oblikovati.Exporter.Inventor.Model
         Arc,
         Spline,
         Ellipse,
+        EllipticalArc,
     }
 
     /// <summary>
@@ -92,6 +93,12 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>Ellipse only: the minor semi-axis length (cm).</summary>
         public double MinorRadius { get; set; }
+
+        /// <summary>Elliptical arc only: the start angle (radians, about the major axis).</summary>
+        public double StartAngle { get; set; }
+
+        /// <summary>Elliptical arc only: the end angle (radians).</summary>
+        public double EndAngle { get; set; }
     }
 
     /// <summary>

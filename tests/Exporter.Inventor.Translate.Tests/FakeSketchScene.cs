@@ -39,12 +39,14 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly SketchSplines _splines;
         private readonly SketchControlPointSplines _ctrlSplines;
         private readonly SketchEllipses _ellipses;
+        private readonly SketchEllipticalArcs _ellipticalArcs;
 
         public FakePlanarSketch(
             string name, Point origin, Line axis, Plane plane, IList<SketchLine> lines, IList<SketchCircle> circles,
             IList<GeometricConstraint>? constraints = null, IList<DimensionConstraint>? dimensions = null,
             IList<SketchArc>? arcs = null, IList<SketchSpline>? splines = null,
-            IList<SketchControlPointSpline>? controlPointSplines = null, IList<SketchEllipse>? ellipses = null)
+            IList<SketchControlPointSpline>? controlPointSplines = null, IList<SketchEllipse>? ellipses = null,
+            IList<SketchEllipticalArc>? ellipticalArcs = null)
         {
             _name = name;
             _origin = origin;
@@ -59,6 +61,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _ctrlSplines = new FakeSketchControlPointSplines(
                 controlPointSplines ?? new List<SketchControlPointSpline>());
             _ellipses = new FakeSketchEllipses(ellipses ?? new List<SketchEllipse>());
+            _ellipticalArcs = new FakeSketchEllipticalArcs(ellipticalArcs ?? new List<SketchEllipticalArc>());
         }
 
         public override string Name => _name;
@@ -84,6 +87,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override SketchControlPointSplines SketchControlPointSplines => _ctrlSplines;
 
         public override SketchEllipses SketchEllipses => _ellipses;
+
+        public override SketchEllipticalArcs SketchEllipticalArcs => _ellipticalArcs;
 
         /// <summary>A unit square (side 4 cm) of four coincident lines on the XY origin plane.</summary>
         public static FakePlanarSketch Square()
@@ -230,6 +235,41 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override UnitVector2d MajorAxisVector => _major;
         public override double MajorRadius => _majorR;
         public override double MinorRadius => _minorR;
+        public override bool Construction => false;
+    }
+
+    public sealed class FakeSketchEllipticalArcs : SketchEllipticalArcs
+    {
+        private readonly IList<SketchEllipticalArc> _items;
+        public FakeSketchEllipticalArcs(IList<SketchEllipticalArc> items) => _items = items;
+        public override int Count => _items.Count;
+        public override SketchEllipticalArc this[int index] => _items[index - 1];
+    }
+
+    public sealed class FakeSketchEllipticalArc : SketchEllipticalArc
+    {
+        private readonly SketchPoint _center;
+        private readonly UnitVector2d _major;
+        private readonly double _majorR;
+        private readonly double _minorR;
+        private readonly double _start;
+        private readonly double _sweep;
+        public FakeSketchEllipticalArc(
+            double cx, double cy, double[] majorAxis, double majorR, double minorR, double startAngle, double sweepAngle)
+        {
+            _center = new FakeSketchPoint(cx, cy);
+            _major = new FakeUnitVector2d(majorAxis[0], majorAxis[1]);
+            _majorR = majorR;
+            _minorR = minorR;
+            _start = startAngle;
+            _sweep = sweepAngle;
+        }
+        public override SketchPoint CenterSketchPoint => _center;
+        public override UnitVector2d MajorAxisVector => _major;
+        public override double MajorRadius => _majorR;
+        public override double MinorRadius => _minorR;
+        public override double StartAngle => _start;
+        public override double SweepAngle => _sweep;
         public override bool Construction => false;
     }
 

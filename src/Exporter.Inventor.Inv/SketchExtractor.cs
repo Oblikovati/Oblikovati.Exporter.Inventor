@@ -56,6 +56,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractSplines(sketch.SketchSplines, result, curveIds, pointRefs, ref nextId);
             ExtractControlPointSplines(sketch.SketchControlPointSplines, result, curveIds, pointRefs, ref nextId);
             ExtractEllipses(sketch.SketchEllipses, result, curveIds, pointRefs, ref nextId);
+            ExtractEllipticalArcs(sketch.SketchEllipticalArcs, result, curveIds, pointRefs, ref nextId);
 
             InferCoincidences(result);
             ExtractConstraints(sketch.GeometricConstraints, result, curveIds);
@@ -206,6 +207,32 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 });
                 curveIds[ellipse] = id;
                 pointRefs[ellipse.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
+            }
+        }
+
+        private static void ExtractEllipticalArcs(
+            SketchEllipticalArcs arcs, InventorSketch result,
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs, ref long nextId)
+        {
+            for (int i = 1; i <= arcs.Count; i++)
+            {
+                SketchEllipticalArc arc = arcs[i];
+                long id = nextId++;
+                UnitVector2d major = arc.MajorAxisVector;
+                result.Curves.Add(new InventorCurve
+                {
+                    Id = id,
+                    Kind = InventorCurveKind.EllipticalArc,
+                    Center = P2(arc.CenterSketchPoint.Geometry),
+                    MajorAxis = new[] { major.X, major.Y },
+                    MajorRadius = arc.MajorRadius,
+                    MinorRadius = arc.MinorRadius,
+                    StartAngle = arc.StartAngle,
+                    EndAngle = arc.StartAngle + arc.SweepAngle, // Inventor gives start + included sweep
+                    Construction = arc.Construction,
+                });
+                curveIds[arc] = id;
+                pointRefs[arc.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
             }
         }
 

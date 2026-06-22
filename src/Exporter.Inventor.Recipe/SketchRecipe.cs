@@ -91,6 +91,12 @@ namespace Oblikovati.Exporter.Inventor.Recipe
         [YamlMember(Alias = "minorRadius", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public double? MinorRadius { get; set; }
 
+        [YamlMember(Alias = "startAngle", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double? StartAngle { get; set; }
+
+        [YamlMember(Alias = "endAngle", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double? EndAngle { get; set; }
+
         [YamlMember(Alias = "ccw", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public bool? Ccw { get; set; }
 
