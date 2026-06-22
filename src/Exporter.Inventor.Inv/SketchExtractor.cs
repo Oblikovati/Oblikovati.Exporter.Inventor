@@ -54,6 +54,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractCircles(sketch.SketchCircles, result, curveIds, pointRefs, ref nextId);
             ExtractArcs(sketch.SketchArcs, result, curveIds, pointRefs, ref nextId);
             ExtractSplines(sketch.SketchSplines, result, curveIds, pointRefs, ref nextId);
+            ExtractControlPointSplines(sketch.SketchControlPointSplines, result, curveIds, pointRefs, ref nextId);
 
             InferCoincidences(result);
             ExtractConstraints(sketch.GeometricConstraints, result, curveIds);
@@ -149,6 +150,33 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     SketchPoint fit = spline.get_FitPoint(j);
                     curve.SplinePoints.Add(P2(fit.Geometry));
                     pointRefs[fit] = new InventorPointRef(id, InventorCurvePointRole.SplinePoint, j - 1);
+                }
+
+                result.Curves.Add(curve);
+                curveIds[spline] = id;
+            }
+        }
+
+        private static void ExtractControlPointSplines(
+            SketchControlPointSplines splines, InventorSketch result,
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs, ref long nextId)
+        {
+            for (int i = 1; i <= splines.Count; i++)
+            {
+                SketchControlPointSpline spline = splines[i];
+                long id = nextId++;
+                var curve = new InventorCurve
+                {
+                    Id = id,
+                    Kind = InventorCurveKind.Spline,
+                    Closed = spline.IsClosed,
+                    Fit = false, // a control-point spline is a control polygon, not interpolating
+                };
+                for (int j = 1; j <= spline.ControlPointCount; j++)
+                {
+                    SketchPoint control = spline.get_ControlPoint(j);
+                    curve.SplinePoints.Add(P2(control.Geometry));
+                    pointRefs[control] = new InventorPointRef(id, InventorCurvePointRole.SplinePoint, j - 1);
                 }
 
                 result.Curves.Add(curve);
