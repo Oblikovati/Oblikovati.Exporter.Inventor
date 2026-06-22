@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: GPL-2.0-only
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # Builds and packages an installable add-in zip for each supported Inventor version (each
+  # bundling its matching interop) and publishes them to a GitHub prerelease. These are alpha
+  # builds; validate on your Inventor version.
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Package per Inventor version
+        run: |
+          VERSION="0.1.${{ github.run_number }}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p dist
+          for year in 2025 2026 2027; do
+            scripts/package.sh "$year" "$VERSION" "dist/Oblikovati.Exporter.Inventor-$VERSION-$year.zip"
+          done
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$VERSION" dist/*.zip \
+            --title "v$VERSION" \
+            --notes "Alpha add-in builds for Inventor 2025, 2026 and 2027. Each zip bundles the matching Autodesk.Inventor.Interop.dll; see deploy/README.md to install." \
+            --prerelease \
+            --target "${{ github.sha }}"

@@ -10,9 +10,9 @@ namespace Oblikovati.Exporter.Inventor.Entry
     /// .addin manifest and calls <see cref="Activate"/> at load. The ClassId GUID here MUST
     /// match the manifest's &lt;ClassId&gt; (deploy/Oblikovati.Exporter.Inventor.addin).
     ///
-    /// The ribbon button and dialog wiring arrive in a later milestone; for now the add-in
-    /// loads cleanly and <see cref="RunExport"/> performs the export. All real logic lives in
-    /// the host-free <see cref="ExportJob"/>; this class only owns the Inventor session.
+    /// At activation it publishes the "Export to Oblikovati" ribbon button (<see cref="RibbonCommand"/>),
+    /// whose click calls <see cref="RunExport"/>. All real logic lives in the host-free
+    /// <see cref="ExportJob"/>; this class only owns the Inventor session and the command.
     /// </summary>
     [Guid("D29E9B5F-00C3-4F22-B8BA-555610F62927")]
     [ComVisible(true)]
@@ -20,14 +20,18 @@ namespace Oblikovati.Exporter.Inventor.Entry
     public sealed class StandardAddInServer : ApplicationAddInServer
     {
         private Application? _application;
+        private RibbonCommand? _command;
 
         public void Activate(ApplicationAddInSite addInSiteObject, bool firstTime)
         {
             _application = addInSiteObject.Application;
+            _command = new RibbonCommand(RunExport);
+            _command.Register(_application);
         }
 
         public void Deactivate()
         {
+            _command = null;
             _application = null;
         }
 
@@ -41,7 +45,7 @@ namespace Oblikovati.Exporter.Inventor.Entry
 
         /// <summary>
         /// Exports the active document next to its source file and reports the result on the
-        /// status bar. Invoked by the ribbon command (wired in a later milestone).
+        /// status bar. Invoked by the ribbon button.
         /// </summary>
         public void RunExport()
         {

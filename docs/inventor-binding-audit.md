@@ -149,6 +149,22 @@ translation = cells 1..3 × 4) rather than `GetMatrixData`, whose array ordering
 (row- vs column-major) — `get_Cell` is layout-independent. Components shared by several
 occurrences are de-duplicated by full file name so each prototype is exported once.
 
+## ✅ Ribbon/command surface (real-compile-verified on 2025/2026/2027)
+
+The M7 ribbon command compiles clean against all three genuine interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `Application.CommandManager` / `.UserInterfaceManager` | `CommandManager` / `UserInterfaceManager` |
+| `CommandManager.ControlDefinitions.AddButtonDefinition(...)` | → `ButtonDefinition` |
+| `ButtonDefinition.OnExecute` | event `ButtonDefinitionSink_OnExecuteEventHandler(NameValueMap)` |
+| `UserInterfaceManager.Ribbons[name]` → `.RibbonTabs[name]` → `.RibbonPanels.Add(...)` | `Ribbon` / `RibbonTab` / `RibbonPanel` |
+| `RibbonPanel.CommandControls.AddButton(buttonDef, useLargeIcon)` | → `CommandControl` |
+
+The `OnExecute` handler is a `void(NameValueMap)` method group, which binds to the event against
+both the stub and the real assembly. This is compile-verified only; the button's actual
+appearance/behaviour needs a live Inventor session to confirm.
+
 ## Not yet exercised
 
 The pattern/mirror **translation** is complete and volume-round-tripped, but **live extraction**

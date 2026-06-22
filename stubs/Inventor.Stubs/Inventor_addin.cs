@@ -38,6 +38,12 @@ namespace Inventor
             get => throw Stub.Error();
             set => throw Stub.Error();
         }
+
+        /// <summary>Entry to control definitions (button commands).</summary>
+        public virtual CommandManager CommandManager => throw Stub.Error();
+
+        /// <summary>Entry to the ribbons (where the add-in publishes its button).</summary>
+        public virtual UserInterfaceManager UserInterfaceManager => throw Stub.Error();
     }
 
     internal static class Stub
