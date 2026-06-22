@@ -44,25 +44,26 @@ dotnet test  -c Release
 ```
 
 The Inventor-aware projects link a compile-only `Autodesk.Inventor.Interop` stub by default.
-For a real build, point `InventorSdkDir` at a folder containing the genuine
-`Autodesk.Inventor.Interop.dll`. Autodesk
-[publishes the interop binaries](https://www.autodesk.com/support/technical/article/caas/tsarticles/ts/1r0objlzvLJeSDzxNV8b87.html)
-for add-in developers, so you don't need a local Inventor install:
+For a real build against the genuine interop, set `UseInventorStubs=false`; the vendored
+Inventor 2027 interop (`interop/2027`) is used automatically:
 
 ```
-scripts/fetch-interop.sh v31.0 /tmp/inventor-2027     # 2027; v30.2 = 2026, v29.3 = 2025
-dotnet build src/Exporter.Inventor.Entry -c Release \
-  -p:UseInventorStubs=false \
-  -p:InventorSdkDir=/tmp/inventor-2027
+dotnet build src/Exporter.Inventor.Entry -c Release -p:UseInventorStubs=false
+# or another version:
+dotnet build src/Exporter.Inventor.Entry -c Release -p:UseInventorStubs=false \
+  -p:InventorSdkDir="$PWD/interop/2025"   # or interop/2026
 ```
 
-(On a machine with Inventor installed, `InventorSdkDir` can instead point at
-`…\Autodesk\Inventor 2027\Bin`.) The interop is Autodesk's IP — it is referenced with
-`Private=false` (Inventor supplies it at runtime) and is **never** committed to this repo.
+The genuine `Autodesk.Inventor.Interop.dll` for each supported Inventor version is **vendored**
+in [`interop/<year>`](interop/README.md). Since Inventor 2025 an add-in must ship the matching
+interop in its own folder, and Autodesk
+[publishes these binaries](https://www.autodesk.com/support/technical/article/caas/tsarticles/ts/1r0objlzvLJeSDzxNV8b87.html)
+for exactly that — so they are committed (not fetched) for deterministic builds. They remain
+Autodesk's property under Autodesk's license; see `interop/README.md`.
 
-CI runs this real-assembly compile as the `binding-check` job across a matrix of **Inventor
-2025, 2026 and 2027**, so the genuine interop catches any binding mismatch the stub can't —
-on every PR, on a stock runner.
+CI runs the real-assembly compile as the `binding-check` job across a matrix of **Inventor 2025,
+2026 and 2027** against the vendored interop, so the genuine API catches any binding mismatch the
+stub can't — on every PR.
 
 ## Distribution
 

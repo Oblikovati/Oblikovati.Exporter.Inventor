@@ -10,6 +10,9 @@
     <!-- COM-visible so Inventor can create the add-in via its ClassId. -->
     <ComVisible>true</ComVisible>
     <UseInventorStubs Condition="'$(UseInventorStubs)' == ''">true</UseInventorStubs>
+    <!-- Real-assembly builds default to the vendored Inventor 2027 interop (interop/2027);
+         override with -p:InventorSdkDir=<dir> to build against another version. -->
+    <InventorSdkDir Condition="'$(InventorSdkDir)' == ''">$(MSBuildThisFileDirectory)..\..\interop\2027</InventorSdkDir>
   </PropertyGroup>
 
   <ItemGroup>

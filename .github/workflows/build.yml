@@ -60,26 +60,21 @@ jobs:
 
   # Job 3 — binding check. Compiles the adapter + add-in against the REAL Autodesk Inventor
   # interop (-p:UseInventorStubs=false) so the compiler flags any facade member that does not
-  # match the genuine API — the verification the stub can't give. Autodesk publishes the interop
-  # binaries for add-in developers, so CI fetches them on a stock runner (no Inventor install or
-  # self-hosted runner needed) and checks all supported versions. Builds only the add-in chain
-  # (Entry pulls Inv): the test project links the stub interop, so a whole-solution real build
-  # would clash on the "Autodesk.Inventor.Interop" assembly name.
+  # match the genuine API — the verification the stub can't give. The interop binaries are
+  # vendored in interop/<year> (an add-in must ship them anyway; see interop/README.md), so the
+  # check is deterministic across all supported versions with no network fetch. Builds only the
+  # add-in chain (Entry pulls Inv): the test project links the stub interop, so a whole-solution
+  # real build would clash on the "Autodesk.Inventor.Interop" assembly name.
   binding-check:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { inventor: '2025', interop: 'v29.3' }
-          - { inventor: '2026', interop: 'v30.2' }
-          - { inventor: '2027', interop: 'v31.0' }
+        inventor: ['2025', '2026', '2027']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Fetch Inventor ${{ matrix.inventor }} interop (${{ matrix.interop }})
-        run: scripts/fetch-interop.sh "${{ matrix.interop }}" "$RUNNER_TEMP/interop"
-      - name: Build add-in against the real Inventor ${{ matrix.inventor }} interop
-        run: dotnet build src/Exporter.Inventor.Entry -c Release -p:UseInventorStubs=false -p:InventorSdkDir="$RUNNER_TEMP/interop"
+      - name: Build add-in against the vendored Inventor ${{ matrix.inventor }} interop
+        run: dotnet build src/Exporter.Inventor.Entry -c Release -p:UseInventorStubs=false -p:InventorSdkDir="${{ github.workspace }}/interop/${{ matrix.inventor }}"
