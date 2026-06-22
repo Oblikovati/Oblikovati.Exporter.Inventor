@@ -36,11 +36,12 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly GeometricConstraints _constraints;
         private readonly DimensionConstraints _dimensions;
         private readonly SketchArcs _arcs;
+        private readonly SketchSplines _splines;
 
         public FakePlanarSketch(
             string name, Point origin, Line axis, Plane plane, IList<SketchLine> lines, IList<SketchCircle> circles,
             IList<GeometricConstraint>? constraints = null, IList<DimensionConstraint>? dimensions = null,
-            IList<SketchArc>? arcs = null)
+            IList<SketchArc>? arcs = null, IList<SketchSpline>? splines = null)
         {
             _name = name;
             _origin = origin;
@@ -51,6 +52,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _constraints = new FakeGeometricConstraints(constraints ?? new List<GeometricConstraint>());
             _dimensions = new FakeDimensionConstraints(dimensions ?? new List<DimensionConstraint>());
             _arcs = new FakeSketchArcs(arcs ?? new List<SketchArc>());
+            _splines = new FakeSketchSplines(splines ?? new List<SketchSpline>());
         }
 
         public override string Name => _name;
@@ -70,6 +72,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override DimensionConstraints DimensionConstraints => _dimensions;
 
         public override SketchArcs SketchArcs => _arcs;
+
+        public override SketchSplines SketchSplines => _splines;
 
         /// <summary>A unit square (side 4 cm) of four coincident lines on the XY origin plane.</summary>
         public static FakePlanarSketch Square()
@@ -138,6 +142,31 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override int Count => _items.Count;
 
         public override SketchCircle this[int index] => _items[index - 1];
+    }
+
+    public sealed class FakeSketchSplines : SketchSplines
+    {
+        private readonly IList<SketchSpline> _items;
+        public FakeSketchSplines(IList<SketchSpline> items) => _items = items;
+        public override int Count => _items.Count;
+        public override SketchSpline this[int index] => _items[index - 1];
+    }
+
+    /// <summary>A fit-point spline through the given 2D points.</summary>
+    public sealed class FakeSketchSpline : SketchSpline
+    {
+        private readonly SketchPoint[] _fitPoints;
+        private readonly bool _closed;
+        public FakeSketchSpline(bool closed, double[][] points)
+        {
+            _closed = closed;
+            _fitPoints = new SketchPoint[points.Length];
+            for (int i = 0; i < points.Length; i++) _fitPoints[i] = new FakeSketchPoint(points[i][0], points[i][1]);
+        }
+        public override int FitPointCount => _fitPoints.Length;
+        public override SketchPoint get_FitPoint(int index) => _fitPoints[index - 1];
+        public override bool Closed => _closed;
+        public override bool Construction => false;
     }
 
     public sealed class FakeSketchArcs : SketchArcs

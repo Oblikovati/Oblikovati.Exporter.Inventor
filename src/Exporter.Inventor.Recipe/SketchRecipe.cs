@@ -90,6 +90,12 @@ namespace Oblikovati.Exporter.Inventor.Recipe
 
         [YamlMember(Alias = "centerline", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public bool? Centerline { get; set; }
+
+        [YamlMember(Alias = "closed", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public bool? Closed { get; set; }
+
+        [YamlMember(Alias = "fit", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public bool? Fit { get; set; }
     }
 
     /// <summary>

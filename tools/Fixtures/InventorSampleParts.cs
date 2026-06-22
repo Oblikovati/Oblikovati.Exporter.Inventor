@@ -361,6 +361,32 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        /// <summary>
+        /// A closed fit-spline through four fixed points (a rounded blob). All fit points are
+        /// fixed, so it is DOF 0, and the closed spline is one closed profile.
+        /// </summary>
+        public static InventorDocument SplineSketchPart()
+        {
+            var doc = new InventorDocument { DisplayName = "spline", Kind = InventorDocumentKind.Part };
+            var sketch = new InventorSketch { Name = "Blob" };
+            const long s0 = 1;
+            var spline = new InventorCurve { Id = s0, Kind = InventorCurveKind.Spline, Closed = true, Fit = true };
+            spline.SplinePoints.Add(new double[] { 0, 0 });
+            spline.SplinePoints.Add(new double[] { 4, 0 });
+            spline.SplinePoints.Add(new double[] { 4, 3 });
+            spline.SplinePoints.Add(new double[] { 0, 3 });
+            sketch.Curves.Add(spline);
+            for (int i = 0; i < spline.SplinePoints.Count; i++)
+            {
+                var fix = new InventorSketchConstraint { Kind = InventorConstraintKind.Fix };
+                fix.Points.Add(new InventorPointRef(s0, InventorCurvePointRole.SplinePoint, i));
+                sketch.Constraints.Add(fix);
+            }
+
+            doc.Sketches.Add(sketch);
+            return doc;
+        }
+
         // A fixed circle of the given radius (cm) on a plane offset originZ along Z, with a
         // diameter dimension. The 2D center is the origin, so it sits at (0,0,originZ) in model space.
         private static InventorSketch CircleSketch(string name, double radius, double originZ)

@@ -80,6 +80,7 @@ The M3 sketch extractor compiles clean against all three genuine interops. Membe
 | `SketchLine.StartSketchPoint` / `.EndSketchPoint` / `.Construction` / `.Geometry3d` | `SketchPoint` / `SketchPoint` / `bool` / `LineSegment` |
 | `SketchCircle.CenterSketchPoint` / `.Radius` / `.Construction` | `SketchPoint` / `double` / `bool` |
 | `PlanarSketch.SketchArcs` → `SketchArc.CenterSketchPoint`/`.StartSketchPoint`/`.EndSketchPoint`/`.SweepAngle` | center/start/end + sweep sense (positive = CCW); arc ends join a profile (coincidence inferred) |
+| `PlanarSketch.SketchSplines` → `SketchSpline.FitPointCount`/`get_FitPoint(i)`/`.Closed` | a fit-spline's ordered points (`get_FitPoint` is a parameterized COM property → method, 1-based) + closed flag |
 | `SketchPoint.Geometry` | `Point2d` (sketch coords, cm) |
 | `Point2d.X/.Y`, `Point.X/.Y/.Z` | `double` |
 | `Plane.Normal`, `Line.Direction` | `UnitVector` |
@@ -265,4 +266,4 @@ tessellation is a later step. Both are also volume-round-tripped (a ~31.4 cm³ c
   point placement whose `Direction` is a planar `Face` is read.
 
 Also pending: less-common sketch constraints (tangent/concentric/collinear/equal) + angle
-dimensions, and sketch splines.
+dimensions, and control-point splines (only fit-point splines are read).

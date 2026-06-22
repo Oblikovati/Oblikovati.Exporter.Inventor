@@ -25,6 +25,8 @@ namespace Inventor
 
         public virtual SketchArcs SketchArcs => throw Stub.Error();
 
+        public virtual SketchSplines SketchSplines => throw Stub.Error();
+
         public virtual GeometricConstraints GeometricConstraints => throw Stub.Error();
 
         public virtual DimensionConstraints DimensionConstraints => throw Stub.Error();
@@ -101,6 +103,29 @@ namespace Inventor
         public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
 
         public virtual double Radius => throw Stub.Error();
+
+        public virtual bool Construction => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the sketch-splines collection (int-indexed, 1-based).</summary>
+    public class SketchSplines
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual SketchSpline this[int index] => throw Stub.Error();
+    }
+
+    /// <summary>
+    /// Stub of one fit-point sketch spline. Fit points are read by index via get_FitPoint (the
+    /// real Item is a parameterized COM property), 1-based, count = FitPointCount.
+    /// </summary>
+    public class SketchSpline
+    {
+        public virtual int FitPointCount => throw Stub.Error();
+
+        public virtual SketchPoint get_FitPoint(int index) => throw Stub.Error();
+
+        public virtual bool Closed => throw Stub.Error();
 
         public virtual bool Construction => throw Stub.Error();
     }

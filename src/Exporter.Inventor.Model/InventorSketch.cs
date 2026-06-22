@@ -34,14 +34,19 @@ namespace Oblikovati.Exporter.Inventor.Model
         Line,
         Circle,
         Arc,
+        Spline,
     }
 
-    /// <summary>Which defining point of a curve a constraint/dimension refers to.</summary>
+    /// <summary>
+    /// Which defining point of a curve a constraint/dimension refers to. <see cref="SplinePoint"/>
+    /// is indexed (a spline has an ordered list of fit points); the others ignore the index.
+    /// </summary>
     public enum InventorCurvePointRole
     {
         Start,
         End,
         Center,
+        SplinePoint,
     }
 
     /// <summary>
@@ -68,20 +73,36 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>A line that acts as an axis (excluded from profiles; used as a revolve axis).</summary>
         public bool Centerline { get; set; }
+
+        /// <summary>A spline's ordered fit points (2D, cm). Used only when Kind is Spline.</summary>
+        public IList<double[]> SplinePoints { get; } = new List<double[]>();
+
+        /// <summary>Whether a spline is closed (forms its own loop).</summary>
+        public bool Closed { get; set; }
+
+        /// <summary>Whether a spline interpolates its points (fit) rather than being a control polygon.</summary>
+        public bool Fit { get; set; }
     }
 
-    /// <summary>A reference to one defining point of a curve (e.g. a line's end point).</summary>
+    /// <summary>
+    /// A reference to one defining point of a curve (e.g. a line's end point, or a spline's
+    /// indexed fit point).
+    /// </summary>
     public readonly struct InventorPointRef
     {
-        public InventorPointRef(long curveId, InventorCurvePointRole role)
+        public InventorPointRef(long curveId, InventorCurvePointRole role, int index = 0)
         {
             CurveId = curveId;
             Role = role;
+            Index = index;
         }
 
         public long CurveId { get; }
 
         public InventorCurvePointRole Role { get; }
+
+        /// <summary>The fit-point index for a <see cref="InventorCurvePointRole.SplinePoint"/>; else 0.</summary>
+        public int Index { get; }
     }
 
     public enum InventorConstraintKind
