@@ -28,21 +28,22 @@ namespace Oblikovati.Exporter.Inventor.GoldenGen
             string outDir = args[0];
             Directory.CreateDirectory(outDir);
 
-            var translator = new DocumentTranslator();
+            var exporter = new DocumentExporter(new DocumentTranslator());
             var writer = new RecipeYamlWriter();
             foreach (InventorDocument fixture in Fixtures())
             {
-                OblikovatiDocument recipe = translator.Translate(fixture, new ExportReport());
-                string path = Path.Combine(outDir, fixture.DisplayName + Extension(fixture.Kind));
-                File.WriteAllText(path, writer.Write(recipe));
-                Console.WriteLine("wrote " + path);
+                // Each fixture goes through the full exporter, so an assembly emits its .oad plus
+                // its component files (deduped).
+                foreach (TranslatedDocument doc in exporter.Export(fixture, new ExportReport()))
+                {
+                    string path = Path.Combine(outDir, doc.FileName);
+                    File.WriteAllText(path, writer.Write(doc.Document));
+                    Console.WriteLine("wrote " + path);
+                }
             }
 
             return 0;
         }
-
-        private static string Extension(InventorDocumentKind kind) =>
-            kind == InventorDocumentKind.Assembly ? ".oad" : ".opd";
 
         private static IEnumerable<InventorDocument> Fixtures()
         {
@@ -56,6 +57,7 @@ namespace Oblikovati.Exporter.Inventor.GoldenGen
             yield return InventorSampleParts.RectPatternPart();
             yield return InventorSampleParts.MirrorPart();
             yield return InventorSampleParts.CircularPatternPart();
+            yield return InventorSampleParts.AssemblyDoc();
         }
     }
 }

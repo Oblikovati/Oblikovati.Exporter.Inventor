@@ -32,8 +32,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
         [Fact]
         public void Maps_assembly_document_type()
         {
-            var doc = new FakeInventorDocument(
-                DocumentTypeEnum.kAssemblyDocumentObject, "rig.iam", @"C:\work\rig.iam");
+            var doc = new FakeAssemblyDocument("rig.iam", @"C:\work\rig.iam");
             var adapter = new InventorSessionAdapter(new FakeInventorApplication(doc));
 
             Assert.Equal(InventorDocumentKind.Assembly, adapter.ExtractActiveDocument().Kind);

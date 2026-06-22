@@ -36,7 +36,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             Assert.Contains("name: Width", yaml);
             Assert.Contains("expression: 40 mm", yaml);
             Assert.Contains("expression: Width * 2", yaml);
-            Assert.Equal("Exported bracket.opd.", summary);
+            Assert.Equal("Exported 1 file.", summary);
         }
     }
 }

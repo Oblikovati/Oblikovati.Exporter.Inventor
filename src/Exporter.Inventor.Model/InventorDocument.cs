@@ -46,6 +46,9 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>Feature history (extrudes, …) in creation order.</summary>
         public IList<InventorFeature> Features { get; } = new List<InventorFeature>();
+
+        /// <summary>Component placements, when this document is an assembly.</summary>
+        public IList<InventorOccurrence> Occurrences { get; } = new List<InventorOccurrence>();
     }
 
     /// <summary>

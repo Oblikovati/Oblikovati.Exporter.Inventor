@@ -248,6 +248,24 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             return doc;
         }
 
+        /// <summary>
+        /// An assembly of two instances of the same box component (deduped to one exported .opd),
+        /// the second offset 10 cm in X. Exercises the multi-file export and occurrence transforms.
+        /// </summary>
+        public static InventorDocument AssemblyDoc()
+        {
+            InventorDocument box = BoxPart(); // shared by both occurrences (same object → one file)
+            var asm = new InventorDocument { DisplayName = "assembly", Kind = InventorDocumentKind.Assembly };
+            asm.Occurrences.Add(new InventorOccurrence { Name = "Box:1", Component = box });
+            asm.Occurrences.Add(new InventorOccurrence
+            {
+                Name = "Box:2",
+                Component = box,
+                Position = new double[] { 10, 0, 0 },
+            });
+            return asm;
+        }
+
         /// <summary>A part carrying a single datum: a work plane offset 5 cm above XY.</summary>
         public static InventorDocument DatumPlanePart()
         {

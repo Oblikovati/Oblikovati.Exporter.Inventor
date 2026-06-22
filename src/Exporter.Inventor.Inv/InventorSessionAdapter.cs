@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // System.IO is aliased: the Inventor namespace defines its own Path and File types, which
 // would otherwise collide with System.IO.Path / System.IO.File once `using Inventor;` is in scope.
+using System.Collections.Generic;
 using IO = System.IO;
 using Inventor;
 using Oblikovati.Exporter.Inventor.Model;
@@ -22,23 +23,51 @@ namespace Oblikovati.Exporter.Inventor.Inv
             _application = application;
         }
 
-        public InventorDocument ExtractActiveDocument()
+        public InventorDocument ExtractActiveDocument() =>
+            ExtractDocument(ActiveDocument(), new Dictionary<string, InventorDocument>());
+
+        /// <summary>
+        /// Extracts one document (recursing into an assembly's components). <paramref name="cache"/>
+        /// dedups by full file name so a component shared by several occurrences yields one IR
+        /// document (one exported file); registering before recursing also guards against cycles.
+        /// </summary>
+        private InventorDocument ExtractDocument(_Document doc, IDictionary<string, InventorDocument> cache)
         {
-            _Document doc = ActiveDocument();
+            string key = doc.FullFileName;
+            if (!string.IsNullOrEmpty(key) && cache.TryGetValue(key, out InventorDocument existing))
+            {
+                return existing;
+            }
+
             var ir = new InventorDocument
             {
                 DisplayName = NameWithoutExtension(doc.DisplayName),
                 Kind = ToKind(doc.DocumentType),
             };
+            if (!string.IsNullOrEmpty(key))
+            {
+                cache[key] = ir;
+            }
+
             ExtractUnits(doc, ir);
             if (ir.Kind == InventorDocumentKind.Part)
             {
-                var part = (PartDocument)doc;
-                ExtractUserParameters(part, ir);
-                SketchExtractor.Extract(part, ir);
-                FeatureExtractor.Extract(part, ir);
+                ExtractPart((PartDocument)doc, ir);
             }
+            else
+            {
+                ComponentExtractor.Extract(
+                    ((AssemblyDocument)doc).ComponentDefinition, ir, child => ExtractDocument(child, cache));
+            }
+
             return ir;
+        }
+
+        private static void ExtractPart(PartDocument part, InventorDocument ir)
+        {
+            ExtractUserParameters(part, ir);
+            SketchExtractor.Extract(part, ir);
+            FeatureExtractor.Extract(part, ir);
         }
 
         /// <summary>
