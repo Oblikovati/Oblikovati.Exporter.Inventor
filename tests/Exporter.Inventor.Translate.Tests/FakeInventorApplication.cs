@@ -111,11 +111,15 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<PlanarSketch>? sketches = null,
             IList<ExtrudeFeature>? extrudes = null,
             IList<WorkPlane>? workPlanes = null,
-            IList<RevolveFeature>? revolves = null)
+            IList<RevolveFeature>? revolves = null,
+            IList<RectangularPatternFeature>? rectPatterns = null,
+            IList<CircularPatternFeature>? circPatterns = null,
+            IList<MirrorFeature>? mirrors = null)
         {
             _parameters = new FakeParameters(new FakeUserParameters(userParameters));
             _sketches = new FakePlanarSketches(sketches ?? new List<PlanarSketch>());
-            _features = new FakePartFeatures(extrudes ?? new List<ExtrudeFeature>(), revolves);
+            _features = new FakePartFeatures(
+                extrudes ?? new List<ExtrudeFeature>(), revolves, rectPatterns, circPatterns, mirrors);
             _workPlanes = new FakeWorkPlanes(workPlanes ?? new List<WorkPlane>());
         }
 
@@ -157,12 +161,16 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<PlanarSketch>? sketches = null,
             IList<ExtrudeFeature>? extrudes = null,
             IList<WorkPlane>? workPlanes = null,
-            IList<RevolveFeature>? revolves = null)
+            IList<RevolveFeature>? revolves = null,
+            IList<RectangularPatternFeature>? rectPatterns = null,
+            IList<CircularPatternFeature>? circPatterns = null,
+            IList<MirrorFeature>? mirrors = null)
         {
             _displayName = displayName;
             _fullFileName = fullFileName;
             _units = units;
-            _definition = new FakePartComponentDefinition(userParameters, sketches, extrudes, workPlanes, revolves);
+            _definition = new FakePartComponentDefinition(
+                userParameters, sketches, extrudes, workPlanes, revolves, rectPatterns, circPatterns, mirrors);
         }
 
         public override DocumentTypeEnum DocumentType => DocumentTypeEnum.kPartDocumentObject;

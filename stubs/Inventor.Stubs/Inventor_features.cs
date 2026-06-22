@@ -36,6 +36,126 @@ namespace Inventor
         public virtual ExtrudeFeatures ExtrudeFeatures => throw Stub.Error();
 
         public virtual RevolveFeatures RevolveFeatures => throw Stub.Error();
+
+        public virtual RectangularPatternFeatures RectangularPatternFeatures => throw Stub.Error();
+
+        public virtual CircularPatternFeatures CircularPatternFeatures => throw Stub.Error();
+
+        public virtual MirrorFeatures MirrorFeatures => throw Stub.Error();
+    }
+
+    /// <summary>Common base of the modelling features, exposing the Name a pattern reads.</summary>
+    public class PartFeature
+    {
+        public virtual string Name => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a heterogeneous object collection (e.g. a pattern's parent features).</summary>
+    public class ObjectCollection
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual object this[int index] => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the rectangular-pattern features collection (object-indexed, 1-based).</summary>
+    public class RectangularPatternFeatures
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual RectangularPatternFeature this[object index] => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one rectangular pattern. Direction entities are typed object (work axis / edge).</summary>
+    public class RectangularPatternFeature
+    {
+        public virtual string Name => throw Stub.Error();
+
+        public virtual ObjectCollection ParentFeatures => throw Stub.Error();
+
+        public virtual Parameter XCount => throw Stub.Error();
+
+        public virtual Parameter YCount => throw Stub.Error();
+
+        public virtual Parameter XSpacing => throw Stub.Error();
+
+        public virtual Parameter YSpacing => throw Stub.Error();
+
+        public virtual object XDirectionEntity => throw Stub.Error();
+
+        public virtual object YDirectionEntity => throw Stub.Error();
+
+        public virtual bool NaturalXDirection => throw Stub.Error();
+
+        public virtual bool NaturalYDirection => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the circular-pattern features collection (object-indexed, 1-based).</summary>
+    public class CircularPatternFeatures
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual CircularPatternFeature this[object index] => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one circular pattern. The axis entity is typed object (work axis / edge).</summary>
+    public class CircularPatternFeature
+    {
+        public virtual string Name => throw Stub.Error();
+
+        public virtual ObjectCollection ParentFeatures => throw Stub.Error();
+
+        public virtual Parameter Count => throw Stub.Error();
+
+        public virtual Parameter Angle => throw Stub.Error();
+
+        public virtual object AxisEntity => throw Stub.Error();
+
+        public virtual bool NaturalAxisDirection => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the mirror features collection (object-indexed, 1-based).</summary>
+    public class MirrorFeatures
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual MirrorFeature this[object index] => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one mirror. The plane entity is typed object (work plane / planar face).</summary>
+    public class MirrorFeature
+    {
+        public virtual string Name => throw Stub.Error();
+
+        public virtual ObjectCollection ParentFeatures => throw Stub.Error();
+
+        public virtual object MirrorPlaneEntity => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a work axis (its Line gives a point + direction).</summary>
+    public class WorkAxis
+    {
+        public virtual Line Line => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a B-rep edge; its vertices give a straight edge's endpoints.</summary>
+    public class Edge
+    {
+        public virtual Vertex StartVertex => throw Stub.Error();
+
+        public virtual Vertex StopVertex => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a B-rep vertex.</summary>
+    public class Vertex
+    {
+        public virtual Point Point => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a B-rep face; Geometry is the underlying surface (a Plane for a planar face).</summary>
+    public class Face
+    {
+        public virtual object Geometry => throw Stub.Error();
     }
 
     /// <summary>Stub of the revolve-features collection (object-indexed, 1-based).</summary>

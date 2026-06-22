@@ -113,9 +113,11 @@ namespace Inventor
         public virtual UnitVector Normal => throw Stub.Error();
     }
 
-    /// <summary>Stub of a transient line (its direction is the sketch X axis).</summary>
+    /// <summary>Stub of a transient line (root point + direction; the sketch/work axis).</summary>
     public class Line
     {
+        public virtual Point RootPoint => throw Stub.Error();
+
         public virtual UnitVector Direction => throw Stub.Error();
     }
 }
