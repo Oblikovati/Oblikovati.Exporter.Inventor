@@ -28,6 +28,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractRectangularPatterns(features.RectangularPatternFeatures, ir);
             ExtractCircularPatterns(features.CircularPatternFeatures, ir);
             ExtractMirrors(features.MirrorFeatures, ir);
+            DressUpExtractor.Extract(features, ir);
         }
 
         private static void ExtractRectangularPatterns(RectangularPatternFeatures patterns, InventorDocument ir)

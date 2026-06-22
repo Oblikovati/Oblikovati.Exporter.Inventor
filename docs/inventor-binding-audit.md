@@ -187,13 +187,31 @@ plane, straight edge, planar face); an unresolvable entity or an unknown parent-
 skips the pattern rather than guessing. Parent features are mapped to IR feature indices **by
 name** (COM RCW identity is unreliable), matching how the sketch/feature resolution already works.
 
+## ✅ Dress-up read surface (real-compile-verified on 2025/2026/2027)
+
+The M8b dress-up extractor (fillet/chamfer/shell) compiles clean against all three genuine
+interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `PartFeatures.FilletFeatures` / `.ChamferFeatures` / `.ShellFeatures` | the three collections (object-indexed, 1-based) |
+| `FilletFeature.FilletDefinition` → `.EdgeSetCount` / `get_EdgeSetItem(i)` | `int` / `FilletRadiusEdgeSet` (cast `FilletConstantRadiusEdgeSet`) |
+| `FilletConstantRadiusEdgeSet.Edges` / `.Radius` | `EdgeCollection` / `Parameter` |
+| `ChamferFeature.ChamferedEdges` / `.Definition.Distance` | `EdgeCollection` / `Parameter` |
+| `ShellFeature.Definition.InputFaces` / `.Thickness` | `FaceCollection` / `Parameter` |
+| `EdgeCollection[i]` / `FaceCollection[i]` | `object` (cast `Edge` / `Face`) |
+| `Edge.StartVertex`/`StopVertex` → `Vertex.Point` | the straight edge's endpoints (→ midpoint + direction) |
+| `Face.Geometry` (cast `Plane` → `Normal`) + `Face.Vertices` → `Vertex.Point` | a planar face's normal + centroid (vertex average) |
+
+Edge descriptors are read from the vertices (straight edges); a planar face's centroid is its
+vertices' average and its normal its `Plane` geometry — a non-planar face is skipped. The
+`get_EdgeSetItem` parameterized COM property imports as a method, like `get_Cell`/`get_Units`.
+
 ## Not yet exercised (live extraction)
 
-- **dress-ups** (fillet/chamfer/shell/draft/hole, M8b): the translation emits ADR-0040 geometric
-  descriptors (edge midpoint+direction, face centroid+normal) and they **bind correctly in the
-  real reader** (volume round-trips), but extracting those descriptors from a live part needs the
-  Inventor edge/face evaluators (curve midpoint+tangent, surface centroid+normal) over the
-  fillet/chamfer/shell/hole feature selection sets.
+- **hole / draft** dress-ups: the translation + binding are proven (volume round-trips), but
+  extraction is deferred — a hole's placement face comes from a varied `HolePlacementDefinition`
+  (point/sketch/linear/concentric), and a draft carries a pull direction + neutral plane.
 
 Also pending: Inventor's explicit sketch `GeometricConstraints`/`DimensionConstraints`,
 arcs/splines, and sweep/loft.

@@ -42,6 +42,12 @@ namespace Inventor
         public virtual CircularPatternFeatures CircularPatternFeatures => throw Stub.Error();
 
         public virtual MirrorFeatures MirrorFeatures => throw Stub.Error();
+
+        public virtual FilletFeatures FilletFeatures => throw Stub.Error();
+
+        public virtual ChamferFeatures ChamferFeatures => throw Stub.Error();
+
+        public virtual ShellFeatures ShellFeatures => throw Stub.Error();
     }
 
     /// <summary>Common base of the modelling features, exposing the Name a pattern reads.</summary>
@@ -156,6 +162,8 @@ namespace Inventor
     public class Face
     {
         public virtual object Geometry => throw Stub.Error();
+
+        public virtual Vertices Vertices => throw Stub.Error();
     }
 
     /// <summary>Stub of the revolve-features collection (object-indexed, 1-based).</summary>

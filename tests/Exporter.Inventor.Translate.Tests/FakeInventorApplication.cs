@@ -114,12 +114,16 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<RevolveFeature>? revolves = null,
             IList<RectangularPatternFeature>? rectPatterns = null,
             IList<CircularPatternFeature>? circPatterns = null,
-            IList<MirrorFeature>? mirrors = null)
+            IList<MirrorFeature>? mirrors = null,
+            IList<FilletFeature>? fillets = null,
+            IList<ChamferFeature>? chamfers = null,
+            IList<ShellFeature>? shells = null)
         {
             _parameters = new FakeParameters(new FakeUserParameters(userParameters));
             _sketches = new FakePlanarSketches(sketches ?? new List<PlanarSketch>());
             _features = new FakePartFeatures(
-                extrudes ?? new List<ExtrudeFeature>(), revolves, rectPatterns, circPatterns, mirrors);
+                extrudes ?? new List<ExtrudeFeature>(), revolves, rectPatterns, circPatterns, mirrors,
+                fillets, chamfers, shells);
             _workPlanes = new FakeWorkPlanes(workPlanes ?? new List<WorkPlane>());
         }
 
@@ -164,13 +168,17 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<RevolveFeature>? revolves = null,
             IList<RectangularPatternFeature>? rectPatterns = null,
             IList<CircularPatternFeature>? circPatterns = null,
-            IList<MirrorFeature>? mirrors = null)
+            IList<MirrorFeature>? mirrors = null,
+            IList<FilletFeature>? fillets = null,
+            IList<ChamferFeature>? chamfers = null,
+            IList<ShellFeature>? shells = null)
         {
             _displayName = displayName;
             _fullFileName = fullFileName;
             _units = units;
             _definition = new FakePartComponentDefinition(
-                userParameters, sketches, extrudes, workPlanes, revolves, rectPatterns, circPatterns, mirrors);
+                userParameters, sketches, extrudes, workPlanes, revolves, rectPatterns, circPatterns, mirrors,
+                fillets, chamfers, shells);
         }
 
         public override DocumentTypeEnum DocumentType => DocumentTypeEnum.kPartDocumentObject;
