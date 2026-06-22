@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Compile-only facade of the Inventor parameter + units read surface the adapter walks.
+// Shapes mirror the genuine Autodesk.Inventor.Interop (verified by compiling the adapter
+// against the real assembly): UserParameters is 1-based and indexed by object, UserParameter
+// exposes Name/Expression directly, and Units imports as a get_Units() method because its COM
+// accessors are asymmetric (get → string, set → object).
 namespace Inventor
 {
     /// <summary>
@@ -29,27 +33,28 @@ namespace Inventor
 
     /// <summary>
     /// Stub of the user-parameters collection. Inventor collections are 1-based and indexed via
-    /// <c>Item</c>; the exporter iterates by index (robust against flaky COM enumerators).
+    /// <c>Item</c> (an object index); the exporter iterates by index (robust against flaky COM
+    /// enumerators).
     /// </summary>
     public class UserParameters
     {
         public virtual int Count => throw Stub.Error();
 
-        public virtual Parameter this[int index] => throw Stub.Error();
+        public virtual UserParameter this[object index] => throw Stub.Error();
     }
 
     /// <summary>
-    /// Stub of one parameter. <see cref="Expression"/> is the editable expression (units inline,
-    /// e.g. "40 mm", and may reference other parameters by name, e.g. "Width * 2");
-    /// <see cref="Units"/> is the parameter's unit string.
+    /// Stub of one user parameter. <see cref="Expression"/> is the editable expression (units
+    /// inline, e.g. "40 mm", and may reference other parameters by name, e.g. "Width * 2").
+    /// Units is read via <see cref="get_Units"/> to match the real interop's accessor.
     /// </summary>
-    public class Parameter
+    public class UserParameter
     {
         public virtual string Name => throw Stub.Error();
 
         public virtual string Expression => throw Stub.Error();
 
-        public virtual string Units => throw Stub.Error();
+        public virtual string get_Units() => throw Stub.Error();
     }
 
     /// <summary>Length/angle unit identifiers, matching UnitsTypeEnum in the real API.</summary>

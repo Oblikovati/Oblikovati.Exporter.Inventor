@@ -62,10 +62,10 @@ namespace Oblikovati.Exporter.Inventor.Tests
         };
     }
 
-    /// <summary>Named fake parameter.</summary>
-    public sealed class FakeParameter : Parameter
+    /// <summary>Named fake user parameter.</summary>
+    public sealed class FakeUserParameter : UserParameter
     {
-        public FakeParameter(string name, string expression, string units)
+        public FakeUserParameter(string name, string expression, string units)
         {
             _name = name;
             _expression = expression;
@@ -80,22 +80,22 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
         public override string Expression => _expression;
 
-        public override string Units => _units;
+        public override string get_Units() => _units;
     }
 
     /// <summary>Named fake 1-based user-parameters collection backed by a list.</summary>
     public sealed class FakeUserParameters : UserParameters
     {
-        private readonly IList<Parameter> _items;
+        private readonly IList<UserParameter> _items;
 
-        public FakeUserParameters(IList<Parameter> items)
+        public FakeUserParameters(IList<UserParameter> items)
         {
             _items = items;
         }
 
         public override int Count => _items.Count;
 
-        public override Parameter this[int index] => _items[index - 1];
+        public override UserParameter this[object index] => _items[(int)index - 1];
     }
 
     /// <summary>Named fake part component definition holding the user parameters.</summary>
@@ -103,7 +103,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
     {
         private readonly Parameters _parameters;
 
-        public FakePartComponentDefinition(IList<Parameter> userParameters)
+        public FakePartComponentDefinition(IList<UserParameter> userParameters)
         {
             _parameters = new FakeParameters(new FakeUserParameters(userParameters));
         }
@@ -136,7 +136,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             string displayName,
             string fullFileName,
             UnitsOfMeasure units,
-            IList<Parameter> userParameters)
+            IList<UserParameter> userParameters)
         {
             _displayName = displayName;
             _fullFileName = fullFileName;

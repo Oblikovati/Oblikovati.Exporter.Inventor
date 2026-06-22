@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
-using System.IO;
+// System.IO is aliased: the Inventor namespace defines its own Path and File types, which
+// would otherwise collide with System.IO.Path / System.IO.File once `using Inventor;` is in scope.
+using IO = System.IO;
 using Inventor;
 using Oblikovati.Exporter.Inventor.Model;
 
@@ -55,22 +57,25 @@ namespace Oblikovati.Exporter.Inventor.Inv
         private static void ExtractUserParameters(PartDocument doc, InventorDocument ir)
         {
             UserParameters parameters = doc.ComponentDefinition.Parameters.UserParameters;
+            // Inventor collections are 1-based. UserParameter exposes Name/Expression directly;
+            // Units has asymmetric COM accessors (get→string, set→object) so it imports as
+            // get_Units() rather than a property.
             for (int i = 1; i <= parameters.Count; i++)
             {
-                Parameter p = parameters[i];
+                UserParameter p = parameters[i];
                 ir.Parameters.Add(new InventorParameter
                 {
                     Name = p.Name,
                     Expression = p.Expression,
-                    Unit = p.Units,
+                    Unit = p.get_Units(),
                 });
             }
         }
 
         public string OutputDirectory()
         {
-            string? dir = Path.GetDirectoryName(ActiveDocument().FullFileName);
-            return string.IsNullOrEmpty(dir) ? Directory.GetCurrentDirectory() : dir!;
+            string? dir = IO.Path.GetDirectoryName(ActiveDocument().FullFileName);
+            return string.IsNullOrEmpty(dir) ? IO.Directory.GetCurrentDirectory() : dir!;
         }
 
         public void ShowMessage(string message) => _application.StatusBarText = message;
@@ -101,6 +106,6 @@ namespace Oblikovati.Exporter.Inventor.Inv
         }
 
         private static string NameWithoutExtension(string displayName) =>
-            Path.GetFileNameWithoutExtension(displayName);
+            IO.Path.GetFileNameWithoutExtension(displayName);
     }
 }

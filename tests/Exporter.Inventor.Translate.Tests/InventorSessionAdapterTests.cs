@@ -14,9 +14,9 @@ namespace Oblikovati.Exporter.Inventor.Tests
             string displayName = "bracket.ipt",
             string path = @"C:\work\bracket.ipt",
             UnitsOfMeasure? units = null,
-            IList<Parameter>? userParameters = null) =>
+            IList<UserParameter>? userParameters = null) =>
             new FakePartDocument(
-                displayName, path, units ?? new FakeUnitsOfMeasure(), userParameters ?? new List<Parameter>());
+                displayName, path, units ?? new FakeUnitsOfMeasure(), userParameters ?? new List<UserParameter>());
 
         [Fact]
         public void Reads_part_kind_and_strips_extension_from_name()
@@ -55,10 +55,10 @@ namespace Oblikovati.Exporter.Inventor.Tests
         [Fact]
         public void Extracts_user_parameters_with_expression_and_unit()
         {
-            var ups = new List<Parameter>
+            var ups = new List<UserParameter>
             {
-                new FakeParameter("Width", "40 mm", "mm"),
-                new FakeParameter("Height", "Width * 2", "mm"),
+                new FakeUserParameter("Width", "40 mm", "mm"),
+                new FakeUserParameter("Height", "Width * 2", "mm"),
             };
             var adapter = new InventorSessionAdapter(
                 new FakeInventorApplication(Part(userParameters: ups)));

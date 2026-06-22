@@ -44,17 +44,25 @@ dotnet test  -c Release
 ```
 
 The Inventor-aware projects link a compile-only `Autodesk.Inventor.Interop` stub by default.
-For a real build on a machine with Inventor 2027:
+For a real build, point `InventorSdkDir` at a folder containing the genuine
+`Autodesk.Inventor.Interop.dll`. Autodesk
+[publishes the interop binaries](https://www.autodesk.com/support/technical/article/caas/tsarticles/ts/1r0objlzvLJeSDzxNV8b87.html)
+for add-in developers, so you don't need a local Inventor install:
 
 ```
+scripts/fetch-interop.sh v31.0 /tmp/inventor-2027     # 2027; v30.2 = 2026, v29.3 = 2025
 dotnet build src/Exporter.Inventor.Entry -c Release \
   -p:UseInventorStubs=false \
-  -p:InventorSdkDir="C:\Program Files\Autodesk\Inventor 2027\Bin"
+  -p:InventorSdkDir=/tmp/inventor-2027
 ```
 
-CI runs this same command as an opt-in `binding-check` job (gated on the `INVENTOR_SDK_DIR`
-repo variable + a self-hosted `inventor` runner), so the genuine interop catches any binding
-mismatch the stub can't.
+(On a machine with Inventor installed, `InventorSdkDir` can instead point at
+`…\Autodesk\Inventor 2027\Bin`.) The interop is Autodesk's IP — it is referenced with
+`Private=false` (Inventor supplies it at runtime) and is **never** committed to this repo.
+
+CI runs this real-assembly compile as the `binding-check` job across a matrix of **Inventor
+2025, 2026 and 2027**, so the genuine interop catches any binding mismatch the stub can't —
+on every PR, on a stock runner.
 
 ## Distribution
 

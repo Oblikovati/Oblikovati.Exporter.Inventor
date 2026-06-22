@@ -58,22 +58,28 @@ jobs:
       - name: Round-trip golden documents
         run: scripts/roundtrip.sh "$RUNNER_TEMP/oblikovati-cli"
 
-  # Job 3 — binding check (opt-in). Compiles the adapter + add-in against the REAL Inventor
+  # Job 3 — binding check. Compiles the adapter + add-in against the REAL Autodesk Inventor
   # interop (-p:UseInventorStubs=false) so the compiler flags any facade member that does not
-  # match the genuine Autodesk.Inventor.Interop API — the verification the facade stub can't
-  # give. Runs only when the INVENTOR_SDK_DIR repository variable is set (a self-hosted runner
-  # labelled `inventor` with Inventor 2027 installed, or one carrying the interop assembly);
-  # otherwise it is skipped, so it never blocks PRs until the assemblies are available. Build
-  # only the add-in chain (Entry pulls Inv): the test project links the stub interop, so a
-  # whole-solution real build would clash on the "Autodesk.Inventor.Interop" assembly name.
+  # match the genuine API — the verification the stub can't give. Autodesk publishes the interop
+  # binaries for add-in developers, so CI fetches them on a stock runner (no Inventor install or
+  # self-hosted runner needed) and checks all supported versions. Builds only the add-in chain
+  # (Entry pulls Inv): the test project links the stub interop, so a whole-solution real build
+  # would clash on the "Autodesk.Inventor.Interop" assembly name.
   binding-check:
-    if: ${{ vars.INVENTOR_SDK_DIR != '' }}
-    runs-on: [self-hosted, inventor]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { inventor: '2025', interop: 'v29.3' }
+          - { inventor: '2026', interop: 'v30.2' }
+          - { inventor: '2027', interop: 'v31.0' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build add-in against the real Inventor interop
-        shell: bash
-        run: dotnet build src/Exporter.Inventor.Entry -c Release -p:UseInventorStubs=false -p:InventorSdkDir="${{ vars.INVENTOR_SDK_DIR }}"
+      - name: Fetch Inventor ${{ matrix.inventor }} interop (${{ matrix.interop }})
+        run: scripts/fetch-interop.sh "${{ matrix.interop }}" "$RUNNER_TEMP/interop"
+      - name: Build add-in against the real Inventor ${{ matrix.inventor }} interop
+        run: dotnet build src/Exporter.Inventor.Entry -c Release -p:UseInventorStubs=false -p:InventorSdkDir="$RUNNER_TEMP/interop"
