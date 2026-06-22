@@ -139,6 +139,7 @@ namespace Oblikovati.Exporter.Inventor.Model
         Fix,
         Symmetry,
         Ground,
+        Smooth,
     }
 
     /// <summary>

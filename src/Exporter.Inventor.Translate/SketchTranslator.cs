@@ -184,6 +184,13 @@ namespace Oblikovati.Exporter.Inventor.Translate
                     }
 
                     return row;
+                case InventorConstraintKind.Smooth:
+                    // The two junction points (one per curve) plus the two smooth curves.
+                    row.Points.Add(points.PointId(c.Points[0]));
+                    row.Points.Add(points.PointId(c.Points[1]));
+                    row.Curves.Add(entityIds[c.Curves[0]]);
+                    row.Curves.Add(entityIds[c.Curves[1]]);
+                    return row;
                 default:
                     _report.Skip("sketch-constraint", c.Kind.ToString());
                     return null;
@@ -253,6 +260,7 @@ namespace Oblikovati.Exporter.Inventor.Translate
             InventorConstraintKind.Fix => "fix",
             InventorConstraintKind.Symmetry => "symmetry",
             InventorConstraintKind.Ground => "ground",
+            InventorConstraintKind.Smooth => "smooth",
             _ => kind.ToString(),
         };
 

@@ -107,6 +107,7 @@ Explicit constraints/dimensions are also read (coincidence stays inferred from m
 | `TwoLineAngleDimConstraint.LineOne`/`.LineTwo` / `.Parameter` | the two lines + the angle expression |
 | `SymmetryConstraint.EntityOne`/`.EntityTwo`/`.SymmetryLine` | two points symmetric about a line (read when both entities resolve to points) |
 | `GroundConstraint.Entity` | grounds an entity — emitted as a `ground` of all the entity's defining points |
+| `SmoothConstraint.EntityOne`/`.EntityTwo` | two G2-continuous curves — emitted as `smooth` of the two curves + their coincident junction point (one ref per curve, derived from the curves' endpoints) |
 | `Parameter.Expression` | `string` (the dimension's driving expression, e.g. "width") |
 
 Constraints/dimensions are matched by their concrete COM type (pattern matching), and their
