@@ -22,7 +22,43 @@ jobs:
       - name: Test
         run: dotnet test -c Release --no-build --collect:"XPlat Code Coverage"
 
-  # Job 2 — binding check (opt-in). Compiles the adapter + add-in against the REAL Inventor
+  # Job 2 — golden round-trip. Builds oblikovati-cli from the Oblikovati repo and opens every
+  # golden document the C# emitter produces, binding the emitter to the real Go reader and
+  # catching schema drift.
+  roundtrip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+      # Both repos are public, so no token is needed. oblikovati-cli lives in the GPL
+      # application module, which `require`s the Apache api module resolved (in local dev)
+      # via go.work; CI has no go.work, so we check the api sibling out and inject a
+      # `replace`, exactly as the Oblikovati repo's own CI does.
+      - name: Checkout Oblikovati (CLI reader)
+        uses: actions/checkout@v4
+        with:
+          repository: Oblikovati/Oblikovati
+          ref: develop
+          path: _oblikovati
+      - name: Checkout Oblikovati.API (contract sibling)
+        uses: actions/checkout@v4
+        with:
+          repository: Oblikovati/Oblikovati.API
+          path: _oblikovati-api
+      - name: Build oblikovati-cli
+        working-directory: _oblikovati
+        run: |
+          go mod edit -replace oblikovati.org/api=../_oblikovati-api
+          go build -o "$RUNNER_TEMP/oblikovati-cli" ./cmd/oblikovati-cli
+      - name: Round-trip golden documents
+        run: scripts/roundtrip.sh "$RUNNER_TEMP/oblikovati-cli"
+
+  # Job 3 — binding check (opt-in). Compiles the adapter + add-in against the REAL Inventor
   # interop (-p:UseInventorStubs=false) so the compiler flags any facade member that does not
   # match the genuine Autodesk.Inventor.Interop API — the verification the facade stub can't
   # give. Runs only when the INVENTOR_SDK_DIR repository variable is set (a self-hosted runner

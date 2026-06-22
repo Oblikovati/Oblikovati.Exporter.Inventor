@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Sample Inventor-neutral documents shared by GoldenGen (CI round-trip) and the test
+       suite, so the same fixtures are unit-asserted and opened by oblikovati-cli. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Fixtures</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.Inventor.Fixtures</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Model\Exporter.Inventor.Model.csproj" />
+  </ItemGroup>
+
+</Project>
