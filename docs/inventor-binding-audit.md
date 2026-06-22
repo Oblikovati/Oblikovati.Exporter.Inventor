@@ -165,15 +165,30 @@ The `OnExecute` handler is a `void(NameValueMap)` method group, which binds to t
 both the stub and the real assembly. This is compile-verified only; the button's actual
 appearance/behaviour needs a live Inventor session to confirm.
 
+## ✅ Pattern / mirror read surface (real-compile-verified on 2025/2026/2027)
+
+The M5b pattern/mirror extractor compiles clean against all three genuine interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `PartFeatures.RectangularPatternFeatures` / `.CircularPatternFeatures` / `.MirrorFeatures` | the three collections (object-indexed, 1-based) |
+| `RectangularPatternFeature.XCount`/`YCount`/`XSpacing`/`YSpacing` | `Parameter` (`._Value`) |
+| `RectangularPatternFeature.XDirectionEntity` / `.NaturalXDirection` | `object` / `bool` |
+| `CircularPatternFeature.Count`/`Angle` / `.AxisEntity` / `.NaturalAxisDirection` | `Parameter` / `object` / `bool` |
+| `MirrorFeature.MirrorPlaneEntity` | `object` |
+| `*.ParentFeatures` | `ObjectCollection`; each item cast to `PartFeature` for its `Name` |
+| `WorkAxis.Line` (`RootPoint` + `Direction`) | the axis point/direction |
+| `WorkPlane.Plane` (`RootPoint` + `Normal`) | the mirror plane |
+| `Edge.StartVertex`/`StopVertex` → `Vertex.Point` | a straight direction edge |
+| `Face.Geometry` (cast `Plane`) | a planar mirror face |
+
+The `object`-typed direction/axis/plane entities are resolved by type-dispatch (work axis, work
+plane, straight edge, planar face); an unresolvable entity or an unknown parent-feature name
+skips the pattern rather than guessing. Parent features are mapped to IR feature indices **by
+name** (COM RCW identity is unreliable), matching how the sketch/feature resolution already works.
+
 ## Not yet exercised (live extraction)
 
-Several feature **translations** are complete and volume-round-tripped (so the recipe path is
-proven), but their **live extraction** from a real part is deferred — each needs Inventor B-rep
-geometry evaluation or `object`-typed reference resolution that only matters when reading a live
-document:
-
-- **pattern / mirror** (M5b): the direction/axis/mirror-plane are typed `object` (a work axis,
-  edge, face or work plane) → resolve each to a vector/plane.
 - **dress-ups** (fillet/chamfer/shell/draft/hole, M8b): the translation emits ADR-0040 geometric
   descriptors (edge midpoint+direction, face centroid+normal) and they **bind correctly in the
   real reader** (volume round-trips), but extracting those descriptors from a live part needs the

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 using System;
+using System.Collections.Generic;
 using Inventor;
 using Oblikovati.Exporter.Inventor.Model;
 
@@ -19,10 +20,179 @@ namespace Oblikovati.Exporter.Inventor.Inv
         public static void Extract(PartDocument document, InventorDocument ir)
         {
             PartComponentDefinition definition = document.ComponentDefinition;
+            PartFeatures features = definition.Features;
             ExtractWorkPlanes(definition.WorkPlanes, ir);
-            ExtractExtrudes(definition.Features.ExtrudeFeatures, ir);
-            ExtractRevolves(definition.Features.RevolveFeatures, ir);
+            ExtractExtrudes(features.ExtrudeFeatures, ir);
+            ExtractRevolves(features.RevolveFeatures, ir);
+            // Patterns/mirror reference earlier features by name, so extract them last.
+            ExtractRectangularPatterns(features.RectangularPatternFeatures, ir);
+            ExtractCircularPatterns(features.CircularPatternFeatures, ir);
+            ExtractMirrors(features.MirrorFeatures, ir);
         }
+
+        private static void ExtractRectangularPatterns(RectangularPatternFeatures patterns, InventorDocument ir)
+        {
+            for (int i = 1; i <= patterns.Count; i++)
+            {
+                RectangularPatternFeature p = patterns[i];
+                double[]? xDir = ResolveDirection(p.XDirectionEntity, p.NaturalXDirection);
+                if (xDir == null || !TryResolveSources(p.ParentFeatures, ir, out var sources))
+                {
+                    continue; // unresolved direction or source -> skip rather than guess
+                }
+
+                var pattern = new InventorRectangularPattern
+                {
+                    Name = p.Name,
+                    CountX = (int)p.XCount._Value,
+                    CountY = (int)p.YCount._Value,
+                    StepX = Scale(xDir, p.XSpacing._Value),
+                };
+                double[]? yDir = ResolveDirection(p.YDirectionEntity, p.NaturalYDirection);
+                if (pattern.CountY > 1 && yDir != null)
+                {
+                    pattern.StepY = Scale(yDir, p.YSpacing._Value);
+                }
+
+                AddSources(pattern, sources);
+                ir.Features.Add(pattern);
+            }
+        }
+
+        private static void ExtractCircularPatterns(CircularPatternFeatures patterns, InventorDocument ir)
+        {
+            for (int i = 1; i <= patterns.Count; i++)
+            {
+                CircularPatternFeature p = patterns[i];
+                (double[] point, double[] dir)? axis = ResolveAxis(p.AxisEntity, p.NaturalAxisDirection);
+                if (axis == null || !TryResolveSources(p.ParentFeatures, ir, out var sources))
+                {
+                    continue;
+                }
+
+                var pattern = new InventorCircularPattern
+                {
+                    Name = p.Name,
+                    Count = (int)p.Count._Value,
+                    AngleRadians = p.Angle._Value,
+                    AxisPoint = axis.Value.point,
+                    AxisDir = axis.Value.dir,
+                };
+                AddSources(pattern, sources);
+                ir.Features.Add(pattern);
+            }
+        }
+
+        private static void ExtractMirrors(MirrorFeatures mirrors, InventorDocument ir)
+        {
+            for (int i = 1; i <= mirrors.Count; i++)
+            {
+                MirrorFeature m = mirrors[i];
+                (double[] origin, double[] normal)? plane = ResolvePlane(m.MirrorPlaneEntity);
+                if (plane == null || !TryResolveSources(m.ParentFeatures, ir, out var sources))
+                {
+                    continue;
+                }
+
+                var mirror = new InventorMirror
+                {
+                    Name = m.Name,
+                    PlaneOrigin = plane.Value.origin,
+                    PlaneNormal = plane.Value.normal,
+                };
+                AddSources(mirror, sources);
+                ir.Features.Add(mirror);
+            }
+        }
+
+        // Maps a pattern's parent features (by name) to IR feature indices; fails if any is unknown.
+        private static bool TryResolveSources(ObjectCollection parents, InventorDocument ir, out List<int> sources)
+        {
+            sources = new List<int>();
+            for (int i = 1; i <= parents.Count; i++)
+            {
+                int idx = FeatureIndexOf(ir, ((PartFeature)parents[i]).Name);
+                if (idx < 0)
+                {
+                    return false;
+                }
+
+                sources.Add(idx);
+            }
+
+            return sources.Count > 0;
+        }
+
+        private static int FeatureIndexOf(InventorDocument ir, string name)
+        {
+            for (int i = 0; i < ir.Features.Count; i++)
+            {
+                if (ir.Features[i].Name == name)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        // A unit direction from a work axis or a straight edge (negated when not the natural sense).
+        private static double[]? ResolveDirection(object entity, bool natural)
+        {
+            double[]? dir = entity switch
+            {
+                WorkAxis axis => V(axis.Line.Direction),
+                Edge edge => Normalize(Sub(P3(edge.StopVertex.Point), P3(edge.StartVertex.Point))),
+                _ => null,
+            };
+            if (dir == null || (dir[0] == 0 && dir[1] == 0 && dir[2] == 0))
+            {
+                return null;
+            }
+
+            return natural ? dir : new[] { -dir[0], -dir[1], -dir[2] };
+        }
+
+        private static (double[] point, double[] dir)? ResolveAxis(object entity, bool natural)
+        {
+            if (!(entity is WorkAxis axis))
+            {
+                return null;
+            }
+
+            double[] dir = V(axis.Line.Direction);
+            if (!natural)
+            {
+                dir = new[] { -dir[0], -dir[1], -dir[2] };
+            }
+
+            return (P3(axis.Line.RootPoint), dir);
+        }
+
+        private static (double[] origin, double[] normal)? ResolvePlane(object entity)
+        {
+            switch (entity)
+            {
+                case WorkPlane wp:
+                    return (P3(wp.Plane.RootPoint), V(wp.Plane.Normal));
+                case Face face when face.Geometry is Plane plane:
+                    return (P3(plane.RootPoint), V(plane.Normal));
+                default:
+                    return null;
+            }
+        }
+
+        private static void AddSources(InventorReplicatingFeature feature, List<int> sources)
+        {
+            foreach (int s in sources)
+            {
+                feature.SourceFeatureIndices.Add(s);
+            }
+        }
+
+        private static double[] Scale(double[] v, double s) => new[] { v[0] * s, v[1] * s, v[2] * s };
+
+        private static double[] Sub(double[] a, double[] b) => new[] { a[0] - b[0], a[1] - b[1], a[2] - b[2] };
 
         private static void ExtractRevolves(RevolveFeatures revolves, InventorDocument ir)
         {

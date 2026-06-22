@@ -12,16 +12,33 @@ namespace Oblikovati.Exporter.Inventor.Tests
     {
         private readonly ExtrudeFeatures _extrudes;
         private readonly RevolveFeatures _revolves;
+        private readonly RectangularPatternFeatures _rectPatterns;
+        private readonly CircularPatternFeatures _circPatterns;
+        private readonly MirrorFeatures _mirrors;
 
-        public FakePartFeatures(IList<ExtrudeFeature> extrudes, IList<RevolveFeature>? revolves = null)
+        public FakePartFeatures(
+            IList<ExtrudeFeature> extrudes,
+            IList<RevolveFeature>? revolves = null,
+            IList<RectangularPatternFeature>? rectPatterns = null,
+            IList<CircularPatternFeature>? circPatterns = null,
+            IList<MirrorFeature>? mirrors = null)
         {
             _extrudes = new FakeExtrudeFeatures(extrudes);
             _revolves = new FakeRevolveFeatures(revolves ?? new List<RevolveFeature>());
+            _rectPatterns = new FakeRectangularPatternFeatures(rectPatterns ?? new List<RectangularPatternFeature>());
+            _circPatterns = new FakeCircularPatternFeatures(circPatterns ?? new List<CircularPatternFeature>());
+            _mirrors = new FakeMirrorFeatures(mirrors ?? new List<MirrorFeature>());
         }
 
         public override ExtrudeFeatures ExtrudeFeatures => _extrudes;
 
         public override RevolveFeatures RevolveFeatures => _revolves;
+
+        public override RectangularPatternFeatures RectangularPatternFeatures => _rectPatterns;
+
+        public override CircularPatternFeatures CircularPatternFeatures => _circPatterns;
+
+        public override MirrorFeatures MirrorFeatures => _mirrors;
     }
 
     public sealed class FakeRevolveFeatures : RevolveFeatures
