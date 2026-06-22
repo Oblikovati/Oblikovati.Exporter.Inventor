@@ -91,10 +91,12 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly Profile _profile;
         private readonly Path _path;
         public FakeSweepFeature(string name, string profileSketchName, double[][] pathPoints)
+            : this(name, profileSketchName, new FakePath(pathPoints)) { }
+        public FakeSweepFeature(string name, string profileSketchName, Path path)
         {
             _name = name;
             _profile = new FakeProfile(profileSketchName);
-            _path = new FakePath(pathPoints);
+            _path = path;
         }
         public override string Name => _name;
         public override PartFeatureOperationEnum Operation => PartFeatureOperationEnum.kNewBodyOperation;
@@ -120,10 +122,79 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
     public sealed class FakePathEntity : PathEntity
     {
-        private readonly SketchLine _line;
-        public FakePathEntity(double[] a, double[] b) => _line = new FakePathLine(a, b);
-        public override object SketchEntity => _line;
-        public override bool OpposedToSketchEntity => false;
+        private readonly object _entity;
+        private readonly bool _opposed;
+        public FakePathEntity(double[] a, double[] b) : this(new FakePathLine(a, b), false) { }
+        public FakePathEntity(object entity, bool opposed)
+        {
+            _entity = entity;
+            _opposed = opposed;
+        }
+        public override object SketchEntity => _entity;
+        public override bool OpposedToSketchEntity => _opposed;
+    }
+
+    /// <summary>A sweep path made of explicit entities (e.g. arc/spline segments) in order.</summary>
+    public sealed class FakeEntityPath : Path
+    {
+        private readonly IList<PathEntity> _entities;
+        public FakeEntityPath(IList<PathEntity> entities) => _entities = entities;
+        public override int Count => _entities.Count;
+        public override PathEntity this[int index] => _entities[index - 1];
+    }
+
+    /// <summary>A sketch arc whose only role is its tessellated 3D geometry (a sweep-path segment).</summary>
+    public sealed class FakePathArc : SketchArc
+    {
+        private readonly Arc3d _geometry;
+        public FakePathArc(double[][] strokePoints) => _geometry = new FakeArc3d(strokePoints);
+        public override Arc3d Geometry3d => _geometry;
+    }
+
+    /// <summary>A sketch spline whose only role is its tessellated 3D geometry (a sweep-path segment).</summary>
+    public sealed class FakePathSpline : SketchSpline
+    {
+        private readonly BSplineCurve _geometry;
+        public FakePathSpline(double[][] strokePoints) => _geometry = new FakeBSplineCurve(strokePoints);
+        public override BSplineCurve Geometry3d => _geometry;
+    }
+
+    public sealed class FakeArc3d : Arc3d
+    {
+        private readonly CurveEvaluator _evaluator;
+        public FakeArc3d(double[][] strokePoints) => _evaluator = new FakeCurveEvaluator(strokePoints);
+        public override CurveEvaluator Evaluator => _evaluator;
+    }
+
+    public sealed class FakeBSplineCurve : BSplineCurve
+    {
+        private readonly CurveEvaluator _evaluator;
+        public FakeBSplineCurve(double[][] strokePoints) => _evaluator = new FakeCurveEvaluator(strokePoints);
+        public override CurveEvaluator Evaluator => _evaluator;
+    }
+
+    /// <summary>An evaluator that returns a fixed polyline as its strokes (x,y,z flattened).</summary>
+    public sealed class FakeCurveEvaluator : CurveEvaluator
+    {
+        private readonly double[][] _points;
+        public FakeCurveEvaluator(double[][] points) => _points = points;
+        public override void GetParamExtents(out double minParam, out double maxParam)
+        {
+            minParam = 0;
+            maxParam = 1;
+        }
+        public override void GetStrokes(
+            double fromParam, double toParam, double tolerance, out int vertexCount, out double[] vertexCoordinates)
+        {
+            vertexCount = _points.Length;
+            vertexCoordinates = new double[_points.Length * 3];
+            for (int i = 0; i < _points.Length; i++)
+            {
+                vertexCoordinates[i * 3] = _points[i][0];
+                vertexCoordinates[(i * 3) + 1] = _points[i][1];
+                vertexCoordinates[(i * 3) + 2] = _points[i][2];
+            }
+        }
     }
 
     /// <summary>A sketch line that only needs its 3D geometry (for a sweep path segment).</summary>

@@ -33,9 +33,12 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractSweeps(features.SweepFeatures, ir);
         }
 
-        // Sweeps whose path is a chain of straight segments: each path entity's sketch line gives a
-        // 3D segment (oriented by OpposedToSketchEntity), chained into the path polyline. A path with
-        // a non-line entity (arc/spline) is skipped — its tessellation is a later step.
+        // Chordal tolerance (cm) for tessellating a curved path segment into the path polyline.
+        private const double PathStrokeToleranceCm = 0.02;
+
+        // Sweeps whose path is a chain of line/arc/spline segments: each path entity's 3D geometry
+        // gives a segment (oriented by OpposedToSketchEntity) chained into the path polyline; curved
+        // segments are tessellated via the curve evaluator. A path with an unknown entity is skipped.
         private static void ExtractSweeps(SweepFeatures sweeps, InventorDocument ir)
         {
             for (int i = 1; i <= sweeps.Count; i++)
@@ -75,28 +78,69 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= path.Count; i++)
             {
                 PathEntity entity = path[i];
-                if (!(entity.SketchEntity is SketchLine line))
+                List<double[]>? segment = SegmentPoints(entity.SketchEntity);
+                if (segment == null || segment.Count < 2)
                 {
-                    return null; // non-straight path segment -> skip the sweep for now
+                    return null; // unknown path-segment type -> skip the sweep
                 }
 
-                LineSegment segment = line.Geometry3d;
-                double[] a = P3(segment.StartPoint);
-                double[] b = P3(segment.EndPoint);
                 if (entity.OpposedToSketchEntity)
                 {
-                    (a, b) = (b, a);
+                    segment.Reverse();
                 }
 
-                if (points.Count == 0)
-                {
-                    points.Add(a);
-                }
-
-                points.Add(b);
+                AppendSegment(points, segment);
             }
 
             return points;
+        }
+
+        // The polyline points of one path segment in model space: a line is its two endpoints; an
+        // arc/spline is tessellated through its curve evaluator within a chordal tolerance.
+        private static List<double[]>? SegmentPoints(object sketchEntity)
+        {
+            switch (sketchEntity)
+            {
+                case SketchLine line:
+                    LineSegment seg = line.Geometry3d;
+                    return new List<double[]> { P3(seg.StartPoint), P3(seg.EndPoint) };
+                case SketchArc arc:
+                    return Tessellate(arc.Geometry3d.Evaluator);
+                case SketchSpline spline:
+                    return Tessellate(spline.Geometry3d.Evaluator);
+                default:
+                    return null;
+            }
+        }
+
+        private static List<double[]> Tessellate(CurveEvaluator evaluator)
+        {
+            evaluator.GetParamExtents(out double min, out double max);
+            evaluator.GetStrokes(min, max, PathStrokeToleranceCm, out int count, out double[] coords);
+            var points = new List<double[]>(count);
+            for (int k = 0; k < count; k++)
+            {
+                points.Add(new[] { coords[k * 3], coords[k * 3 + 1], coords[k * 3 + 2] });
+            }
+
+            return points;
+        }
+
+        // Chains a segment onto the path, dropping its first point when it coincides with the
+        // running path's last point (the shared junction between consecutive segments).
+        private static void AppendSegment(List<double[]> points, List<double[]> segment)
+        {
+            int start = points.Count > 0 && Coincident(points[points.Count - 1], segment[0]) ? 1 : 0;
+            for (int k = start; k < segment.Count; k++)
+            {
+                points.Add(segment[k]);
+            }
+        }
+
+        private static bool Coincident(double[] a, double[] b)
+        {
+            double dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+            return (dx * dx) + (dy * dy) + (dz * dz) <= PathStrokeToleranceCm * PathStrokeToleranceCm;
         }
 
         // Lofts reference their section profiles' sketches by name; sweeps need the path polyline

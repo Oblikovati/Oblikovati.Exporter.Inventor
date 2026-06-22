@@ -67,4 +67,30 @@ namespace Inventor
 
         public virtual Point EndPoint => throw Stub.Error();
     }
+
+    /// <summary>Stub of a transient 3D arc (a sketch arc's model-space geometry).</summary>
+    public class Arc3d
+    {
+        public virtual CurveEvaluator Evaluator => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a transient 3D B-spline (a sketch spline's model-space geometry).</summary>
+    public class BSplineCurve
+    {
+        public virtual CurveEvaluator Evaluator => throw Stub.Error();
+    }
+
+    /// <summary>
+    /// Stub of a curve evaluator. The exporter tessellates a curved path with GetStrokes:
+    /// it returns the polyline within the chordal Tolerance over [FromParam, ToParam], as
+    /// VertexCount points flattened into VertexCoordinates (x,y,z per vertex).
+    /// </summary>
+    public class CurveEvaluator
+    {
+        public virtual void GetParamExtents(out double minParam, out double maxParam) => throw Stub.Error();
+
+        public virtual void GetStrokes(
+            double fromParam, double toParam, double tolerance, out int vertexCount, out double[] vertexCoordinates)
+            => throw Stub.Error();
+    }
 }
