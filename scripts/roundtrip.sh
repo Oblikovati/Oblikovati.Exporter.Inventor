@@ -25,9 +25,13 @@ declare -A EXPECT_VOL=(
     [chamfered-box.opd]=59.375     # 60 − 0.5²/2·5
     [shelled-box.opd]=33           # 60 − 3×2×4.5 cavity (top face descriptor bound)
     [holed-box.opd]=58.43          # 60 − π·0.5²·2 (placement-face descriptor bound)
+    [sweep.opd]=31.42              # π·1²·10 cylinder (circle profile swept along +Z)
+    [loft.opd]=31.42               # π·1²·10 cylinder (loft between two coaxial circles)
 )
 # Curved-surface results read the faceted body, so they get a wider band.
-declare -A EXPECT_TOL=( [revolve.opd]=0.02 [filleted-box.opd]=0.02 [holed-box.opd]=0.02 )
+declare -A EXPECT_TOL=(
+    [revolve.opd]=0.02 [filleted-box.opd]=0.02 [holed-box.opd]=0.02 [sweep.opd]=0.02 [loft.opd]=0.02
+)
 
 dotnet run --project "$ROOT/tools/GoldenGen" -c Release -- "$OUT"
 

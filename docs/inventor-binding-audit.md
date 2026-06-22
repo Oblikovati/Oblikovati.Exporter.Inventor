@@ -237,11 +237,27 @@ Edge descriptors are read from the vertices (straight edges); a planar face's ce
 vertices' average and its normal its `Plane` geometry — a non-planar face is skipped. The
 `get_EdgeSetItem` parameterized COM property imports as a method, like `get_Cell`/`get_Units`.
 
+## ✅ Loft read surface (real-compile-verified on 2025/2026/2027)
+
+The loft extractor compiles clean against all three genuine interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `PartFeatures.LoftFeatures` | the collection (object-indexed, 1-based) |
+| `LoftFeature.Name` / `.Operation` / `.Sections` | `string` / `PartFeatureOperationEnum` / `ObjectCollection` |
+| `Sections[i]` (cast `Profile`) → `.Parent.Name` | each profile section's sketch (mapped to its IR index by name) |
+
+Each loft section is a `Profile` whose parent sketch resolves to the IR sketch index by name (an
+apex/point section or an unknown sketch skips the loft). Sweep + loft **translation** are
+volume-round-tripped (a circle swept/lofted to a ~31.4 cm³ cylinder).
+
 ## Not yet exercised (live extraction)
 
+- **sweep**: translation is volume-round-tripped, but extraction is deferred — the path is a
+  3D-point polyline that needs the Inventor `Path`/`PathEntity` curves evaluated (loft has no
+  such geometry to evaluate, so it is read).
 - **hole placement variants**: sketch-, linear-, and concentric-placed holes are skipped; only a
-  point placement whose `Direction` is a planar `Face` is read. The other placements need their
-  own definition walks.
+  point placement whose `Direction` is a planar `Face` is read.
 
 Also pending: less-common sketch constraints (tangent/concentric/collinear/equal) + angle
-dimensions, arcs/splines, and sweep/loft.
+dimensions, and arcs/splines.

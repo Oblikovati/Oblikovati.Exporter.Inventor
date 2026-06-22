@@ -51,6 +51,10 @@ namespace Oblikovati.Exporter.Inventor.Translate
                     return DressUpTranslator.Draft(draft);
                 case InventorHole hole:
                     return DressUpTranslator.Hole(hole);
+                case InventorSweep sweep:
+                    return TranslateSweep(sweep);
+                case InventorLoft loft:
+                    return TranslateLoft(loft);
                 default:
                     _report.Skip("feature", feature.GetType().Name);
                     return null;
@@ -85,6 +89,38 @@ namespace Oblikovati.Exporter.Inventor.Translate
                 Angle = revolve.AngleRadians != 0 ? revolve.AngleRadians : (double?)null,
             };
             return new FeatureData { Kind = "revolve", Name = NameOf(revolve), Revolve = payload };
+        }
+
+        private static FeatureData TranslateSweep(InventorSweep sweep)
+        {
+            var payload = new SweepData
+            {
+                Sketch = sweep.ProfileSketchIndex,
+                Profile = sweep.ProfileIndex,
+                Closed = sweep.Closed ? true : (bool?)null,
+                Operation = OperationName(sweep.Operation),
+            };
+            foreach (double[] p in sweep.Path)
+            {
+                payload.Path.Add((double[])p.Clone());
+            }
+
+            return new FeatureData { Kind = "sweep", Name = NameOf(sweep), Sweep = payload };
+        }
+
+        private static FeatureData TranslateLoft(InventorLoft loft)
+        {
+            var payload = new LoftData
+            {
+                Closed = loft.Closed ? true : (bool?)null,
+                Operation = OperationName(loft.Operation),
+            };
+            foreach (InventorLoftSection s in loft.Sections)
+            {
+                payload.Sections.Add(new LoftSectionData { Sketch = s.SketchIndex, Profile = s.ProfileIndex });
+            }
+
+            return new FeatureData { Kind = "loft", Name = NameOf(loft), Loft = payload };
         }
 
         private FeatureData? TranslateRectPattern(

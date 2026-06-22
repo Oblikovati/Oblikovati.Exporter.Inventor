@@ -80,6 +80,29 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
 
         [Fact]
+        public void Sweep_emits_profile_path_and_operation()
+        {
+            PartRecipe part = Translate(InventorSampleParts.SweepPart());
+
+            FeatureData f = Assert.Single(part.Features, x => x.Kind == "sweep");
+            SweepData sweep = Assert.IsType<SweepData>(f.Sweep!);
+            Assert.Equal(0, sweep.Sketch);
+            Assert.Equal(2, sweep.Path.Count);
+            Assert.Equal(new double[] { 0, 0, 10 }, sweep.Path[1]);
+        }
+
+        [Fact]
+        public void Loft_emits_its_two_sections()
+        {
+            PartRecipe part = Translate(InventorSampleParts.LoftPart());
+
+            LoftData loft = Assert.IsType<LoftData>(Assert.Single(part.Features, x => x.Kind == "loft").Loft!);
+            Assert.Equal(2, loft.Sections.Count);
+            Assert.Equal(0, loft.Sections[0].Sketch);
+            Assert.Equal(1, loft.Sections[1].Sketch);
+        }
+
+        [Fact]
         public void Mirror_emits_plane_origin_and_normal_with_remapped_source()
         {
             PartRecipe part = Translate(InventorSampleParts.MirrorPart());

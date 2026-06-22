@@ -20,6 +20,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly ShellFeatures _shells;
         private readonly FaceDraftFeatures _drafts;
         private readonly HoleFeatures _holes;
+        private readonly LoftFeatures _lofts;
 
         public FakePartFeatures(
             IList<ExtrudeFeature> extrudes,
@@ -31,7 +32,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<ChamferFeature>? chamfers = null,
             IList<ShellFeature>? shells = null,
             IList<FaceDraftFeature>? drafts = null,
-            IList<HoleFeature>? holes = null)
+            IList<HoleFeature>? holes = null,
+            IList<LoftFeature>? lofts = null)
         {
             _extrudes = new FakeExtrudeFeatures(extrudes);
             _revolves = new FakeRevolveFeatures(revolves ?? new List<RevolveFeature>());
@@ -43,6 +45,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _shells = new FakeShellFeatures(shells ?? new List<ShellFeature>());
             _drafts = new FakeFaceDraftFeatures(drafts ?? new List<FaceDraftFeature>());
             _holes = new FakeHoleFeatures(holes ?? new List<HoleFeature>());
+            _lofts = new FakeLoftFeatures(lofts ?? new List<LoftFeature>());
         }
 
         public override ExtrudeFeatures ExtrudeFeatures => _extrudes;
@@ -64,6 +67,42 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override FaceDraftFeatures FaceDraftFeatures => _drafts;
 
         public override HoleFeatures HoleFeatures => _holes;
+
+        public override LoftFeatures LoftFeatures => _lofts;
+    }
+
+    public sealed class FakeLoftFeatures : LoftFeatures
+    {
+        private readonly IList<LoftFeature> _items;
+        public FakeLoftFeatures(IList<LoftFeature> items) => _items = items;
+        public override int Count => _items.Count;
+        public override LoftFeature this[object index] => _items[(int)index - 1];
+    }
+
+    /// <summary>A loft whose sections are profiles on the named sketches.</summary>
+    public sealed class FakeLoftFeature : LoftFeature
+    {
+        private readonly string _name;
+        private readonly ObjectCollection _sections;
+        public FakeLoftFeature(string name, params string[] sectionSketchNames)
+        {
+            _name = name;
+            var items = new object[sectionSketchNames.Length];
+            for (int i = 0; i < sectionSketchNames.Length; i++) items[i] = new FakeProfile(sectionSketchNames[i]);
+            _sections = new FakeObjectList(items);
+        }
+        public override string Name => _name;
+        public override PartFeatureOperationEnum Operation => PartFeatureOperationEnum.kNewBodyOperation;
+        public override ObjectCollection Sections => _sections;
+    }
+
+    /// <summary>An object collection over arbitrary items (e.g. loft section profiles).</summary>
+    public sealed class FakeObjectList : ObjectCollection
+    {
+        private readonly object[] _items;
+        public FakeObjectList(object[] items) => _items = items;
+        public override int Count => _items.Length;
+        public override object this[int index] => _items[index - 1];
     }
 
     public sealed class FakeRevolveFeatures : RevolveFeatures
