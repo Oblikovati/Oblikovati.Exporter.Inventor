@@ -189,8 +189,22 @@ name** (COM RCW identity is unreliable), matching how the sketch/feature resolut
 
 ## ✅ Dress-up read surface (real-compile-verified on 2025/2026/2027)
 
-The M8b dress-up extractor (fillet/chamfer/shell) compiles clean against all three genuine
+The dress-up extractor (fillet/chamfer/shell/draft/hole) compiles clean against all three genuine
 interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `PartFeatures.FaceDraftFeatures` / `.HoleFeatures` | the two collections (object-indexed, 1-based) |
+| `FaceDraftFeature._DraftAngle` / `._InputFaces` / `._PullDirection` | `Parameter` / `FaceCollection` / `object` (strongly-typed COM accessors) |
+| `HoleFeature.HoleDiameter` / `.Depth` / `.ExtentType` / `.PlacementDefinition` | `Parameter` / `double` / `PartFeatureExtentEnum` (`kThroughAllExtent`) / `HolePlacementDefinition` |
+| `PointHolePlacementDefinition.Direction` (cast `Face`) | the planar face the hole drills into |
+
+A draft's pull direction is resolved by the same type-dispatch as patterns (planar face/work
+plane normal, or work axis/edge direction); its faces use the shared face-descriptor logic. A
+hole's placement face is the `Direction` entity of a `PointHolePlacementDefinition` when it is a
+planar `Face`; sketch/linear/concentric hole placements are skipped (reported) for now.
+
+The fillet/chamfer/shell members used:
 
 | Member | Reference signature |
 |---|---|
@@ -209,9 +223,9 @@ vertices' average and its normal its `Plane` geometry — a non-planar face is s
 
 ## Not yet exercised (live extraction)
 
-- **hole / draft** dress-ups: the translation + binding are proven (volume round-trips), but
-  extraction is deferred — a hole's placement face comes from a varied `HolePlacementDefinition`
-  (point/sketch/linear/concentric), and a draft carries a pull direction + neutral plane.
+- **hole placement variants**: sketch-, linear-, and concentric-placed holes are skipped; only a
+  point placement whose `Direction` is a planar `Face` is read. The other placements need their
+  own definition walks.
 
 Also pending: Inventor's explicit sketch `GeometricConstraints`/`DimensionConstraints`,
 arcs/splines, and sweep/loft.

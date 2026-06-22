@@ -175,4 +175,69 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override int Count => _items.Count;
         public override Vertex this[int index] => _items[index - 1];
     }
+
+    public sealed class FakeFaceDraftFeatures : FaceDraftFeatures
+    {
+        private readonly IList<FaceDraftFeature> _items;
+        public FakeFaceDraftFeatures(IList<FaceDraftFeature> items) => _items = items;
+        public override int Count => _items.Count;
+        public override FaceDraftFeature this[object index] => _items[(int)index - 1];
+    }
+
+    public sealed class FakeFaceDraftFeature : FaceDraftFeature
+    {
+        private readonly string _name;
+        private readonly double _angle;
+        private readonly FaceCollection _faces;
+        private readonly object _pull;
+        public FakeFaceDraftFeature(string name, double angle, IList<Face> faces, object pull)
+        {
+            _name = name;
+            _angle = angle;
+            _faces = new FakeFaceCollection(faces);
+            _pull = pull;
+        }
+        public override string Name => _name;
+        public override Parameter _DraftAngle => new FakeDistanceParameter(_angle);
+        public override FaceCollection _InputFaces => _faces;
+        public override object _PullDirection => _pull;
+    }
+
+    public sealed class FakeHoleFeatures : HoleFeatures
+    {
+        private readonly IList<HoleFeature> _items;
+        public FakeHoleFeatures(IList<HoleFeature> items) => _items = items;
+        public override int Count => _items.Count;
+        public override HoleFeature this[object index] => _items[(int)index - 1];
+    }
+
+    public sealed class FakeHoleFeature : HoleFeature
+    {
+        private readonly string _name;
+        private readonly double _diameter;
+        private readonly double _depth;
+        private readonly bool _throughAll;
+        private readonly HolePlacementDefinition _placement;
+        public FakeHoleFeature(string name, double diameter, double depth, bool throughAll, Face placementFace)
+        {
+            _name = name;
+            _diameter = diameter;
+            _depth = depth;
+            _throughAll = throughAll;
+            _placement = new FakePointHolePlacementDefinition(placementFace);
+        }
+        public override string Name => _name;
+        public override Parameter HoleDiameter => new FakeDistanceParameter(_diameter);
+        public override double Depth => _depth;
+        public override PartFeatureExtentEnum ExtentType =>
+            _throughAll ? PartFeatureExtentEnum.kThroughAllExtent : PartFeatureExtentEnum.kDistanceExtent;
+        public override HolePlacementDefinition PlacementDefinition => _placement;
+    }
+
+    public sealed class FakePointHolePlacementDefinition : PointHolePlacementDefinition
+    {
+        private readonly object _direction;
+        public FakePointHolePlacementDefinition(object direction) => _direction = direction;
+        public override object Direction => _direction;
+    }
 }

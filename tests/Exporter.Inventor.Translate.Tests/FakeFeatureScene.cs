@@ -18,6 +18,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly FilletFeatures _fillets;
         private readonly ChamferFeatures _chamfers;
         private readonly ShellFeatures _shells;
+        private readonly FaceDraftFeatures _drafts;
+        private readonly HoleFeatures _holes;
 
         public FakePartFeatures(
             IList<ExtrudeFeature> extrudes,
@@ -27,7 +29,9 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<MirrorFeature>? mirrors = null,
             IList<FilletFeature>? fillets = null,
             IList<ChamferFeature>? chamfers = null,
-            IList<ShellFeature>? shells = null)
+            IList<ShellFeature>? shells = null,
+            IList<FaceDraftFeature>? drafts = null,
+            IList<HoleFeature>? holes = null)
         {
             _extrudes = new FakeExtrudeFeatures(extrudes);
             _revolves = new FakeRevolveFeatures(revolves ?? new List<RevolveFeature>());
@@ -37,6 +41,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _fillets = new FakeFilletFeatures(fillets ?? new List<FilletFeature>());
             _chamfers = new FakeChamferFeatures(chamfers ?? new List<ChamferFeature>());
             _shells = new FakeShellFeatures(shells ?? new List<ShellFeature>());
+            _drafts = new FakeFaceDraftFeatures(drafts ?? new List<FaceDraftFeature>());
+            _holes = new FakeHoleFeatures(holes ?? new List<HoleFeature>());
         }
 
         public override ExtrudeFeatures ExtrudeFeatures => _extrudes;
@@ -54,6 +60,10 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override ChamferFeatures ChamferFeatures => _chamfers;
 
         public override ShellFeatures ShellFeatures => _shells;
+
+        public override FaceDraftFeatures FaceDraftFeatures => _drafts;
+
+        public override HoleFeatures HoleFeatures => _holes;
     }
 
     public sealed class FakeRevolveFeatures : RevolveFeatures
