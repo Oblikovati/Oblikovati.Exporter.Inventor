@@ -37,7 +37,7 @@ namespace Oblikovati.Exporter.Inventor.Entry
         }
 
         /// <summary>No automation object is exposed to other clients.</summary>
-        public object? Automation => null;
+        public object Automation => null!;
 
         /// <summary>
         /// Exports the active document next to its source file and reports the result on the

@@ -16,8 +16,8 @@ namespace Inventor
         /// <summary>Legacy command hook; obsolete in the real API but still part of it.</summary>
         void ExecuteCommand(int commandID);
 
-        /// <summary>Optional automation object exposed to other clients; may be null.</summary>
-        object? Automation { get; }
+        /// <summary>Optional automation object exposed to other clients; null when none.</summary>
+        object Automation { get; }
     }
 
     /// <summary>Stub of the site object handed to an add-in at activation.</summary>
@@ -32,8 +32,12 @@ namespace Inventor
         /// <summary>The document currently in front, or null when none is open.</summary>
         public virtual _Document? ActiveDocument => throw Stub.Error();
 
-        /// <summary>Writes a line to Inventor's status bar / transcript.</summary>
-        public virtual void StatusBarText(string text) => throw Stub.Error();
+        /// <summary>The application status-bar text. Assigning shows a message to the user.</summary>
+        public virtual string StatusBarText
+        {
+            get => throw Stub.Error();
+            set => throw Stub.Error();
+        }
     }
 
     internal static class Stub
