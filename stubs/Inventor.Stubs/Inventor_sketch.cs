@@ -101,6 +101,9 @@ namespace Inventor
         public virtual double SweepAngle => throw Stub.Error();
 
         public virtual bool Construction => throw Stub.Error();
+
+        /// <summary>Model-space 3D geometry, tessellated when the arc is a sweep-path segment.</summary>
+        public virtual Arc3d Geometry3d => throw Stub.Error();
     }
 
     /// <summary>Stub of one sketch circle.</summary>
@@ -134,6 +137,9 @@ namespace Inventor
         public virtual bool Closed => throw Stub.Error();
 
         public virtual bool Construction => throw Stub.Error();
+
+        /// <summary>Model-space 3D geometry, tessellated when the spline is a sweep-path segment.</summary>
+        public virtual BSplineCurve Geometry3d => throw Stub.Error();
     }
 
     /// <summary>Stub of the control-point-splines collection (int-indexed, 1-based).</summary>

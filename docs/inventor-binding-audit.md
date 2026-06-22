@@ -258,23 +258,23 @@ The sweep + loft extractors compile clean against all three genuine interops. Me
 | `LoftFeature.Sections[i]` (cast `Profile`) → `.Parent.Name` | each section's sketch (mapped to IR index by name) |
 | `SweepFeature.Name` / `.Operation` / `.Profile` / `.Path` | `string` / `PartFeatureOperationEnum` / `Profile` / `Path` |
 | `Path.Count` / `Path[i]` | `PathEntity` (1-based) |
-| `PathEntity.SketchEntity` (cast `SketchLine`) / `.OpposedToSketchEntity` | `object` / `bool` |
-| `SketchLine.Geometry3d` → `LineSegment.StartPoint`/`.EndPoint` | the segment's model-space 3D endpoints |
+| `PathEntity.SketchEntity` (cast `SketchLine`/`SketchArc`/`SketchSpline`) / `.OpposedToSketchEntity` | `object` / `bool` |
+| `SketchLine.Geometry3d` → `LineSegment.StartPoint`/`.EndPoint` | a straight segment's model-space 3D endpoints |
+| `SketchArc.Geometry3d` → `Arc3d.Evaluator` / `SketchSpline.Geometry3d` → `BSplineCurve.Evaluator` | `CurveEvaluator` for a curved segment |
+| `CurveEvaluator.GetParamExtents(out min, out max)` / `.GetStrokes(from, to, tol, out count, out coords)` | tessellate a curved segment to a polyline within a chordal tolerance |
 
 A loft section's parent sketch resolves to the IR sketch index by name (apex/unknown sections
-skip). A sweep's path is read as a polyline of its straight segments' 3D endpoints, oriented by
-`OpposedToSketchEntity`; a path containing a non-line entity (arc/spline) is skipped — its
-tessellation is a later step. Both are also volume-round-tripped (a ~31.4 cm³ cylinder).
+skip). A sweep's path is read as a polyline: straight segments give their 3D endpoints, curved
+segments (arc/spline) are tessellated through the `CurveEvaluator` (`GetStrokes`, 0.02 cm chordal
+tolerance); every segment is oriented by `OpposedToSketchEntity` and chained with junction-point
+de-duplication. A path with an unknown entity type is skipped. Lofts/sweeps are also
+volume-round-tripped (a ~31.4 cm³ cylinder).
 
 ## Not yet exercised (live extraction)
 
-- **sweep paths with arcs/splines**: only straight-segment paths are read; curved path entities
-  need the `CurveEvaluator` tessellated to a polyline.
 - **hole placement variants**: sketch-, linear-, and concentric-placed holes are skipped; only a
   point placement whose `Direction` is a planar `Face` is read.
 
-Also pending: smooth (G2) constraints and explicit coincidence (coincidence is inferred from
-meeting endpoints, which covers profile closure); and arc/spline sweep paths. Ellipses and
-elliptical arcs round-trip by the open check
-only — Oblikovati has no ellipse radius dimension, so they cannot be driven to DOF 0 (same
-limitation as an arc radius).
+Also pending: explicit coincidence (coincidence is inferred from meeting endpoints, which covers
+profile closure). Ellipses and elliptical arcs round-trip by the open check only — Oblikovati has
+no ellipse radius dimension, so they cannot be driven to DOF 0 (same limitation as an arc radius).
