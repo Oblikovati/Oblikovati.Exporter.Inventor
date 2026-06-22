@@ -115,11 +115,27 @@ its own members (`Parameter._Value` vs `UserParameter.get_Units()`). `Profile.Pa
 `Sketch` (the base), downcast to `PlanarSketch`. The extrude distance is read evaluated from the
 distance `Parameter` (cm); a parameter-driven extent is a later refinement.
 
+## ✅ Revolve read surface (real-compile-verified on 2025/2026/2027)
+
+The M5 revolve extractor compiles clean against all three genuine interops. Members used:
+
+| Member | Reference signature |
+|---|---|
+| `PartFeatures.RevolveFeatures` | `RevolveFeatures` |
+| `RevolveFeatures[i]` / `.Count` | `RevolveFeature this[object Index]` (1-based) / `int` |
+| `RevolveFeature.Name` / `.Operation` / `.Profile` | `string` / `PartFeatureOperationEnum` / `Profile` |
+| `RevolveFeature._AxisEntity` | `SketchLine` (strongly-typed axis; its 2D endpoints become the centerline) |
+| `RevolveFeature.ExtentType` / `.Extent` | `PartFeatureExtentEnum` (`kAngleExtent` / `kFullSweepExtent`) / `PartFeatureExtent` |
+| `AngleExtent.Angle` | `Parameter` (`._Value`, radians) |
+
+The revolve axis is read from the strongly-typed `_AxisEntity` (a `SketchLine`) and added to the
+profile sketch as a centerline curve, so Oblikovati revolves about the sketch's own centerline.
+
 ## Not yet exercised
 
-Inventor's explicit geometric constraints and dimensions (`GeometricConstraints` /
-`DimensionConstraints`), arcs/splines, revolve/sweep/loft, patterns/mirror, dress-ups, and the
-assembly occurrence tree are added in later milestones; their builders will be audited the same
-way as they land. The M3/M4 extractors read line/circle geometry (inferred coincidence) and
-distance-extent extrudes + datum planes; explicit constraints/dimensions and other extents/feature
-kinds are the refinements.
+The pattern/mirror **translation** (rectangular/circular pattern, mirror) is complete and
+volume-round-tripped, but **live extraction** of those is deferred: in the Inventor API the
+direction/axis/mirror-plane are typed `object` (a work axis, edge, face or work plane), and
+resolving each to a vector/plane is the focused follow-up (M5b). Also pending: Inventor's explicit
+sketch `GeometricConstraints`/`DimensionConstraints`, arcs/splines, sweep/loft, dress-ups, and the
+assembly occurrence tree.

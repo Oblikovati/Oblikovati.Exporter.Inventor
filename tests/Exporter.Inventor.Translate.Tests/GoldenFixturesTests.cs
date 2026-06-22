@@ -77,5 +77,22 @@ namespace Oblikovati.Exporter.Inventor.Tests
             Assert.Contains("workFeatures:", yaml);
             Assert.Contains("kind: fixed-frame", yaml);
         }
+
+        [Fact]
+        public void Revolve_part_emits_a_revolve_over_a_centerlined_sketch()
+        {
+            string yaml = Emit(InventorSampleParts.RevolvePart());
+
+            Assert.Contains("kind: revolve", yaml);
+            Assert.Contains("centerline: true", yaml);
+        }
+
+        [Fact]
+        public void Pattern_parts_emit_their_pattern_kinds()
+        {
+            Assert.Contains("kind: rectangular-pattern", Emit(InventorSampleParts.RectPatternPart()));
+            Assert.Contains("kind: circular-pattern", Emit(InventorSampleParts.CircularPatternPart()));
+            Assert.Contains("kind: mirror", Emit(InventorSampleParts.MirrorPart()));
+        }
     }
 }

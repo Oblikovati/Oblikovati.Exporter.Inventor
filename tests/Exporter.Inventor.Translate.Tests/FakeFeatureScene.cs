@@ -11,13 +11,60 @@ namespace Oblikovati.Exporter.Inventor.Tests
     public sealed class FakePartFeatures : PartFeatures
     {
         private readonly ExtrudeFeatures _extrudes;
+        private readonly RevolveFeatures _revolves;
 
-        public FakePartFeatures(IList<ExtrudeFeature> extrudes)
+        public FakePartFeatures(IList<ExtrudeFeature> extrudes, IList<RevolveFeature>? revolves = null)
         {
             _extrudes = new FakeExtrudeFeatures(extrudes);
+            _revolves = new FakeRevolveFeatures(revolves ?? new List<RevolveFeature>());
         }
 
         public override ExtrudeFeatures ExtrudeFeatures => _extrudes;
+
+        public override RevolveFeatures RevolveFeatures => _revolves;
+    }
+
+    public sealed class FakeRevolveFeatures : RevolveFeatures
+    {
+        private readonly IList<RevolveFeature> _items;
+
+        public FakeRevolveFeatures(IList<RevolveFeature> items)
+        {
+            _items = items;
+        }
+
+        public override int Count => _items.Count;
+
+        public override RevolveFeature this[object index] => _items[(int)index - 1];
+    }
+
+    /// <summary>A full-revolution revolve fake: axis line + parent sketch name + operation.</summary>
+    public sealed class FakeRevolveFeature : RevolveFeature
+    {
+        private readonly string _name;
+        private readonly PartFeatureOperationEnum _operation;
+        private readonly Profile _profile;
+        private readonly SketchLine _axis;
+
+        public FakeRevolveFeature(
+            string name, string parentSketchName, SketchLine axis,
+            PartFeatureOperationEnum operation = PartFeatureOperationEnum.kNewBodyOperation)
+        {
+            _name = name;
+            _operation = operation;
+            _profile = new FakeProfile(parentSketchName);
+            _axis = axis;
+        }
+
+        public override string Name => _name;
+
+        public override PartFeatureOperationEnum Operation => _operation;
+
+        public override Profile Profile => _profile;
+
+        public override SketchLine _AxisEntity => _axis;
+
+        public override PartFeatureExtentEnum ExtentType => PartFeatureExtentEnum.kFullSweepExtent;
     }
 
     public sealed class FakeExtrudeFeatures : ExtrudeFeatures

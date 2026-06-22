@@ -21,7 +21,58 @@ namespace Oblikovati.Exporter.Inventor.Inv
             PartComponentDefinition definition = document.ComponentDefinition;
             ExtractWorkPlanes(definition.WorkPlanes, ir);
             ExtractExtrudes(definition.Features.ExtrudeFeatures, ir);
+            ExtractRevolves(definition.Features.RevolveFeatures, ir);
         }
+
+        private static void ExtractRevolves(RevolveFeatures revolves, InventorDocument ir)
+        {
+            for (int i = 1; i <= revolves.Count; i++)
+            {
+                RevolveFeature rev = revolves[i];
+                int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)rev.Profile.Parent).Name);
+                if (sketchIndex < 0)
+                {
+                    continue;
+                }
+
+                // Oblikovati revolves about the sketch's own centerline, so add the axis line to
+                // the profile sketch as a centerline (its 2D endpoints come straight from the axis).
+                InjectCenterline(ir.Sketches[sketchIndex], rev._AxisEntity);
+                ir.Features.Add(new InventorRevolve
+                {
+                    Name = rev.Name,
+                    SketchIndex = sketchIndex,
+                    ProfileIndex = 0,
+                    Operation = ToOperation(rev.Operation),
+                    AngleRadians = rev.ExtentType == PartFeatureExtentEnum.kAngleExtent
+                        ? ((AngleExtent)rev.Extent).Angle._Value
+                        : 0, // full sweep
+                });
+            }
+        }
+
+        private static void InjectCenterline(InventorSketch sketch, SketchLine axis)
+        {
+            long nextId = 1;
+            foreach (InventorCurve c in sketch.Curves)
+            {
+                if (c.Id >= nextId)
+                {
+                    nextId = c.Id + 1;
+                }
+            }
+
+            sketch.Curves.Add(new InventorCurve
+            {
+                Id = nextId,
+                Kind = InventorCurveKind.Line,
+                Start = P2(axis.StartSketchPoint.Geometry),
+                End = P2(axis.EndSketchPoint.Geometry),
+                Centerline = true,
+            });
+        }
+
+        private static double[] P2(Point2d p) => new[] { p.X, p.Y };
 
         private static void ExtractWorkPlanes(WorkPlanes planes, InventorDocument ir)
         {

@@ -14,10 +14,12 @@ namespace Inventor
         kNewBodyOperation = 20485,
     }
 
-    /// <summary>How a feature's extent is defined (only the distance extent is read for now).</summary>
+    /// <summary>How a feature's extent is defined.</summary>
     public enum PartFeatureExtentEnum
     {
         kDistanceExtent = 20737,
+        kAngleExtent = 20738,
+        kFullSweepExtent = 20739,
     }
 
     /// <summary>Which way a single-distance extent grows from the sketch plane.</summary>
@@ -32,6 +34,41 @@ namespace Inventor
     public class PartFeatures
     {
         public virtual ExtrudeFeatures ExtrudeFeatures => throw Stub.Error();
+
+        public virtual RevolveFeatures RevolveFeatures => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the revolve-features collection (object-indexed, 1-based).</summary>
+    public class RevolveFeatures
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual RevolveFeature this[object index] => throw Stub.Error();
+    }
+
+    /// <summary>
+    /// Stub of one revolve feature. The axis is the strongly-typed <see cref="_AxisEntity"/>
+    /// sketch line; the angle (for a non-full revolve) comes from an AngleExtent.
+    /// </summary>
+    public class RevolveFeature
+    {
+        public virtual string Name => throw Stub.Error();
+
+        public virtual PartFeatureOperationEnum Operation => throw Stub.Error();
+
+        public virtual Profile Profile => throw Stub.Error();
+
+        public virtual SketchLine _AxisEntity => throw Stub.Error();
+
+        public virtual PartFeatureExtentEnum ExtentType => throw Stub.Error();
+
+        public virtual PartFeatureExtent Extent => throw Stub.Error();
+    }
+
+    /// <summary>Stub of an angle extent (revolve sweep angle, in radians).</summary>
+    public class AngleExtent : PartFeatureExtent
+    {
+        public virtual Parameter Angle => throw Stub.Error();
     }
 
     /// <summary>Stub of the extrude-features collection (object-indexed, 1-based).</summary>

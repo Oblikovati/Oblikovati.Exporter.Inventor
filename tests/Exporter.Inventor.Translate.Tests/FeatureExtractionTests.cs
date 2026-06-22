@@ -14,12 +14,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
     public sealed class FeatureExtractionTests
     {
         private static InventorDocument Extract(
-            IList<ExtrudeFeature> extrudes, IList<WorkPlane> workPlanes)
+            IList<ExtrudeFeature> extrudes, IList<WorkPlane> workPlanes,
+            IList<RevolveFeature>? revolves = null)
         {
             var sketches = new List<PlanarSketch> { FakePlanarSketch.Square() }; // named "Square"
             var doc = new FakePartDocument(
                 "plate.ipt", @"C:\work\plate.ipt", new FakeUnitsOfMeasure(),
-                new List<UserParameter>(), sketches, extrudes, workPlanes);
+                new List<UserParameter>(), sketches, extrudes, workPlanes, revolves);
             return new InventorSessionAdapter(new FakeInventorApplication(doc)).ExtractActiveDocument();
         }
 
@@ -54,6 +55,24 @@ namespace Oblikovati.Exporter.Inventor.Tests
             InventorWorkPlane plane = Assert.Single(ir.WorkPlanes);
             Assert.Equal("Offset Plane", plane.Name);
             Assert.Equal(new double[] { 0, 0, 5 }, plane.Origin);
+        }
+
+        [Fact]
+        public void Extracts_a_full_revolve_and_injects_the_axis_as_a_centerline()
+        {
+            var axis = FakeSketchLine.From(0, 0, 0, 4); // vertical axis line in sketch space
+            var revolves = new List<RevolveFeature>
+            {
+                new FakeRevolveFeature("Revolve1", "Square", axis),
+            };
+
+            InventorDocument ir = Extract(new List<ExtrudeFeature>(), new List<WorkPlane>(), revolves);
+
+            InventorRevolve revolve = Assert.IsType<InventorRevolve>(Assert.Single(ir.Features));
+            Assert.Equal(0, revolve.SketchIndex);
+            Assert.Equal(0, revolve.AngleRadians); // full sweep
+            // The axis was added to the profile sketch as a centerline curve.
+            Assert.Contains(ir.Sketches[0].Curves, c => c.Centerline);
         }
     }
 }
