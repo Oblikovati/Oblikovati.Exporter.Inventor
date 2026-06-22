@@ -23,11 +23,48 @@ namespace Oblikovati.Exporter.Inventor.Inv
         public InventorDocument ExtractActiveDocument()
         {
             _Document doc = ActiveDocument();
-            return new InventorDocument
+            var ir = new InventorDocument
             {
                 DisplayName = NameWithoutExtension(doc.DisplayName),
                 Kind = ToKind(doc.DocumentType),
             };
+            ExtractUnits(doc, ir);
+            if (ir.Kind == InventorDocumentKind.Part)
+            {
+                ExtractUserParameters((PartDocument)doc, ir);
+            }
+            return ir;
+        }
+
+        /// <summary>
+        /// Copies the document's length/angle units into the IR as expression abbreviations
+        /// (e.g. "mm", "deg") — the form the Oblikovati recipe stores.
+        /// </summary>
+        private static void ExtractUnits(_Document doc, InventorDocument ir)
+        {
+            UnitsOfMeasure uom = doc.UnitsOfMeasure;
+            ir.LengthUnit = uom.GetStringFromType(uom.LengthUnits);
+            ir.AngleUnit = uom.GetStringFromType(uom.AngleUnits);
+        }
+
+        /// <summary>
+        /// Copies the user-authored named parameters (with their expressions and units) into the
+        /// IR. Model parameters (d0, d1…) are feature/sketch dimensions captured with their owning
+        /// feature later, not here.
+        /// </summary>
+        private static void ExtractUserParameters(PartDocument doc, InventorDocument ir)
+        {
+            UserParameters parameters = doc.ComponentDefinition.Parameters.UserParameters;
+            for (int i = 1; i <= parameters.Count; i++)
+            {
+                Parameter p = parameters[i];
+                ir.Parameters.Add(new InventorParameter
+                {
+                    Name = p.Name,
+                    Expression = p.Expression,
+                    Unit = p.Units,
+                });
+            }
         }
 
         public string OutputDirectory()
@@ -36,7 +73,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             return string.IsNullOrEmpty(dir) ? Directory.GetCurrentDirectory() : dir!;
         }
 
-        public void ShowMessage(string message) => _application.StatusBarText(message);
+        public void ShowMessage(string message) => _application.StatusBarText = message;
 
         private _Document ActiveDocument()
         {

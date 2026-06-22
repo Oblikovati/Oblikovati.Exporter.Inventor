@@ -8,7 +8,7 @@ namespace Inventor
     /// </summary>
     public enum DocumentTypeEnum
     {
-        kUnknownDocumentObject = 11484,
+        kUnknownDocumentObject = 12289,
         kPartDocumentObject = 12290,
         kAssemblyDocumentObject = 12291,
         kDrawingDocumentObject = 12292,
@@ -26,5 +26,8 @@ namespace Inventor
         public virtual string DisplayName => throw Stub.Error();
 
         public virtual string FullFileName => throw Stub.Error();
+
+        /// <summary>Document unit preferences (length/angle). Present on every document.</summary>
+        public virtual UnitsOfMeasure UnitsOfMeasure => throw Stub.Error();
     }
 }
