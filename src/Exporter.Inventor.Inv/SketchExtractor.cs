@@ -52,6 +52,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             long nextId = 1;
             ExtractLines(sketch.SketchLines, result, curveIds, pointRefs, ref nextId);
             ExtractCircles(sketch.SketchCircles, result, curveIds, pointRefs, ref nextId);
+            ExtractArcs(sketch.SketchArcs, result, curveIds, pointRefs, ref nextId);
 
             InferCoincidences(result);
             ExtractConstraints(sketch.GeometricConstraints, result, curveIds);
@@ -99,6 +100,31 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 });
                 curveIds[circle] = id;
                 pointRefs[circle.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
+            }
+        }
+
+        private static void ExtractArcs(
+            SketchArcs arcs, InventorSketch result,
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs, ref long nextId)
+        {
+            for (int i = 1; i <= arcs.Count; i++)
+            {
+                SketchArc arc = arcs[i];
+                long id = nextId++;
+                result.Curves.Add(new InventorCurve
+                {
+                    Id = id,
+                    Kind = InventorCurveKind.Arc,
+                    Center = P2(arc.CenterSketchPoint.Geometry),
+                    Start = P2(arc.StartSketchPoint.Geometry),
+                    End = P2(arc.EndSketchPoint.Geometry),
+                    Ccw = arc.SweepAngle > 0, // positive sweep = counter-clockwise start->end
+                    Construction = arc.Construction,
+                });
+                curveIds[arc] = id;
+                pointRefs[arc.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
+                pointRefs[arc.StartSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Start);
+                pointRefs[arc.EndSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.End);
             }
         }
 
@@ -218,7 +244,8 @@ namespace Oblikovati.Exporter.Inventor.Inv
             var slots = new List<(InventorPointRef Ref, double[] Pt)>();
             foreach (InventorCurve c in sketch.Curves)
             {
-                if (c.Kind != InventorCurveKind.Line)
+                // Lines and arcs have start/end endpoints that join a profile; circles do not.
+                if (c.Kind != InventorCurveKind.Line && c.Kind != InventorCurveKind.Arc)
                 {
                     continue;
                 }

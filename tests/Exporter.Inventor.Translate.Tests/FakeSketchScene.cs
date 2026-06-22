@@ -35,10 +35,12 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
         private readonly GeometricConstraints _constraints;
         private readonly DimensionConstraints _dimensions;
+        private readonly SketchArcs _arcs;
 
         public FakePlanarSketch(
             string name, Point origin, Line axis, Plane plane, IList<SketchLine> lines, IList<SketchCircle> circles,
-            IList<GeometricConstraint>? constraints = null, IList<DimensionConstraint>? dimensions = null)
+            IList<GeometricConstraint>? constraints = null, IList<DimensionConstraint>? dimensions = null,
+            IList<SketchArc>? arcs = null)
         {
             _name = name;
             _origin = origin;
@@ -48,6 +50,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _circles = new FakeSketchCircles(circles);
             _constraints = new FakeGeometricConstraints(constraints ?? new List<GeometricConstraint>());
             _dimensions = new FakeDimensionConstraints(dimensions ?? new List<DimensionConstraint>());
+            _arcs = new FakeSketchArcs(arcs ?? new List<SketchArc>());
         }
 
         public override string Name => _name;
@@ -65,6 +68,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override GeometricConstraints GeometricConstraints => _constraints;
 
         public override DimensionConstraints DimensionConstraints => _dimensions;
+
+        public override SketchArcs SketchArcs => _arcs;
 
         /// <summary>A unit square (side 4 cm) of four coincident lines on the XY origin plane.</summary>
         public static FakePlanarSketch Square()
@@ -133,6 +138,35 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override int Count => _items.Count;
 
         public override SketchCircle this[int index] => _items[index - 1];
+    }
+
+    public sealed class FakeSketchArcs : SketchArcs
+    {
+        private readonly IList<SketchArc> _items;
+        public FakeSketchArcs(IList<SketchArc> items) => _items = items;
+        public override int Count => _items.Count;
+        public override SketchArc this[int index] => _items[index - 1];
+    }
+
+    public sealed class FakeSketchArc : SketchArc
+    {
+        private readonly SketchPoint _center;
+        private readonly SketchPoint _start;
+        private readonly SketchPoint _end;
+        private readonly double _sweep;
+        public FakeSketchArc(double cx, double cy, double sx, double sy, double ex, double ey, double sweepAngle)
+        {
+            _center = new FakeSketchPoint(cx, cy);
+            _start = new FakeSketchPoint(sx, sy);
+            _end = new FakeSketchPoint(ex, ey);
+            _sweep = sweepAngle;
+        }
+        public override SketchPoint CenterSketchPoint => _center;
+        public override SketchPoint StartSketchPoint => _start;
+        public override SketchPoint EndSketchPoint => _end;
+        public override double Radius => 0;
+        public override double SweepAngle => _sweep;
+        public override bool Construction => false;
     }
 
     public sealed class FakeSketchCircle : SketchCircle

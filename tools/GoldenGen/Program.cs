@@ -64,6 +64,7 @@ namespace Oblikovati.Exporter.Inventor.GoldenGen
             yield return InventorSampleParts.HoledBoxPart();
             yield return InventorSampleParts.SweepPart();
             yield return InventorSampleParts.LoftPart();
+            yield return InventorSampleParts.ArcExtrudePart();
         }
     }
 }

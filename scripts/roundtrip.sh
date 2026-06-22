@@ -27,10 +27,12 @@ declare -A EXPECT_VOL=(
     [holed-box.opd]=58.43          # 60 − π·0.5²·2 (placement-face descriptor bound)
     [sweep.opd]=31.42              # π·1²·10 cylinder (circle profile swept along +Z)
     [loft.opd]=31.42               # π·1²·10 cylinder (loft between two coaxial circles)
+    [arc-extrude.opd]=31.42        # 10π half-cylinder (half-disc with an arc, extruded)
 )
 # Curved-surface results read the faceted body, so they get a wider band.
 declare -A EXPECT_TOL=(
     [revolve.opd]=0.02 [filleted-box.opd]=0.02 [holed-box.opd]=0.02 [sweep.opd]=0.02 [loft.opd]=0.02
+    [arc-extrude.opd]=0.02
 )
 
 dotnet run --project "$ROOT/tools/GoldenGen" -c Release -- "$OUT"
