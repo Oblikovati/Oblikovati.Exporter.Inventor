@@ -17,6 +17,10 @@ namespace Oblikovati.Exporter.Inventor.Recipe
         /// <summary>Model parameters. Omitted when empty.</summary>
         [YamlMember(Alias = "parameters", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
         public IList<ParameterRecipe> Parameters { get; } = new List<ParameterRecipe>();
+
+        /// <summary>2D sketches. Features reference these by array index. Omitted when empty.</summary>
+        [YamlMember(Alias = "sketches", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public IList<SketchData> Sketches { get; } = new List<SketchData>();
     }
 
     /// <summary>

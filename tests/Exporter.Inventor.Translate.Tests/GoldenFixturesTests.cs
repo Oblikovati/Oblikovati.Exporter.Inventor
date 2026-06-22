@@ -38,5 +38,25 @@ namespace Oblikovati.Exporter.Inventor.Tests
             Assert.Contains("name: height", yaml);
             Assert.Contains("expression: width * 2", yaml);
         }
+
+        [Fact]
+        public void Rectangle_part_emits_a_sketch_with_entities_and_constraints()
+        {
+            string yaml = Emit(InventorSampleParts.RectanglePart());
+
+            Assert.Contains("sketches:", yaml);
+            Assert.Contains("kind: line", yaml);
+            Assert.Contains("kind: coincident", yaml);
+            Assert.Contains("kind: distance", yaml);
+        }
+
+        [Fact]
+        public void Circle_part_emits_a_circle_with_a_diameter_dimension()
+        {
+            string yaml = Emit(InventorSampleParts.CirclePart());
+
+            Assert.Contains("kind: circle", yaml);
+            Assert.Contains("kind: diameter", yaml);
+        }
     }
 }

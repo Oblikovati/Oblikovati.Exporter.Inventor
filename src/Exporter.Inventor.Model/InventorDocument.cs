@@ -37,6 +37,9 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>Model parameters extracted from the part, in Inventor order.</summary>
         public IList<InventorParameter> Parameters { get; } = new List<InventorParameter>();
+
+        /// <summary>2D sketches extracted from the part, in creation order.</summary>
+        public IList<InventorSketch> Sketches { get; } = new List<InventorSketch>();
     }
 
     /// <summary>

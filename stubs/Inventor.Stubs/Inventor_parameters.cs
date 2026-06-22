@@ -19,6 +19,8 @@ namespace Inventor
     public class PartComponentDefinition
     {
         public virtual Parameters Parameters => throw Stub.Error();
+
+        public virtual PlanarSketches Sketches => throw Stub.Error();
     }
 
     /// <summary>

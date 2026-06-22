@@ -33,7 +33,9 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractUnits(doc, ir);
             if (ir.Kind == InventorDocumentKind.Part)
             {
-                ExtractUserParameters((PartDocument)doc, ir);
+                var part = (PartDocument)doc;
+                ExtractUserParameters(part, ir);
+                SketchExtractor.Extract(part, ir);
             }
             return ir;
         }

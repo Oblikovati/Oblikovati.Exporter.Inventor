@@ -98,17 +98,21 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override UserParameter this[object index] => _items[(int)index - 1];
     }
 
-    /// <summary>Named fake part component definition holding the user parameters.</summary>
+    /// <summary>Named fake part component definition holding the user parameters and sketches.</summary>
     public sealed class FakePartComponentDefinition : PartComponentDefinition
     {
         private readonly Parameters _parameters;
+        private readonly PlanarSketches _sketches;
 
-        public FakePartComponentDefinition(IList<UserParameter> userParameters)
+        public FakePartComponentDefinition(IList<UserParameter> userParameters, IList<PlanarSketch>? sketches = null)
         {
             _parameters = new FakeParameters(new FakeUserParameters(userParameters));
+            _sketches = new FakePlanarSketches(sketches ?? new List<PlanarSketch>());
         }
 
         public override Parameters Parameters => _parameters;
+
+        public override PlanarSketches Sketches => _sketches;
     }
 
     /// <summary>Named fake master Parameters collection exposing the user parameters.</summary>
@@ -136,12 +140,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
             string displayName,
             string fullFileName,
             UnitsOfMeasure units,
-            IList<UserParameter> userParameters)
+            IList<UserParameter> userParameters,
+            IList<PlanarSketch>? sketches = null)
         {
             _displayName = displayName;
             _fullFileName = fullFileName;
             _units = units;
-            _definition = new FakePartComponentDefinition(userParameters);
+            _definition = new FakePartComponentDefinition(userParameters, sketches);
         }
 
         public override DocumentTypeEnum DocumentType => DocumentTypeEnum.kPartDocumentObject;
