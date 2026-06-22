@@ -85,11 +85,20 @@ namespace Oblikovati.Exporter.Inventor.Translate
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Center)));
                     entity.Radius = curve.Radius;
                     break;
-                default: // Arc
+                case InventorCurveKind.Arc:
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Center)));
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.Start)));
                     entity.Points.Add(points.PointId(new InventorPointRef(curve.Id, InventorCurvePointRole.End)));
                     entity.Ccw = curve.Ccw ? true : (bool?)null;
+                    break;
+                default: // Spline
+                    foreach (int pid in points.SplinePointIds(curve.Id))
+                    {
+                        entity.Points.Add(pid);
+                    }
+
+                    entity.Closed = curve.Closed ? true : (bool?)null;
+                    entity.Fit = curve.Fit ? true : (bool?)null;
                     break;
             }
 
@@ -194,7 +203,8 @@ namespace Oblikovati.Exporter.Inventor.Translate
         {
             InventorCurveKind.Line => "line",
             InventorCurveKind.Circle => "circle",
-            _ => "arc",
+            InventorCurveKind.Arc => "arc",
+            _ => "spline",
         };
 
         private static string ConstraintName(InventorConstraintKind kind) => kind switch
