@@ -9,10 +9,13 @@ dump B-rep/STEP geometry.
 
 ## Status
 
-**M0 scaffold.** The layered solution, the Inventor stub facade, the add-in shell, the
-translation core, and CI are in place and green. The live Inventor extraction (parameters,
-sketches, features, …) lands milestone by milestone on this foundation — see the milestone
-plan, which mirrors the proven `Oblikovati.Exporter.NX` exporter.
+Working alpha. The add-in extracts and translates **parameters, units, sketches (fully
+constrained), extrude, datum work planes, revolve, rectangular/circular patterns, mirror, and
+assemblies** (`.oad` with the component tree), and publishes an **Export to Oblikovati** ribbon
+button on the Part and Assembly Tools tabs. Every Inventor binding is compile-verified against
+the genuine Autodesk interop on 2025/2026/2027; outputs are round-trip-validated (volumes and
+sketch DOF) against the real Oblikovati reader. Pattern/mirror *live* extraction and dress-ups
+are the remaining work.
 
 ## Architecture
 
@@ -67,8 +70,16 @@ stub can't — on every PR.
 
 ## Distribution
 
-Releases ship the `deploy/` add-in layout (a `.addin` manifest + the built assemblies). See
-`deploy/README.md` for install steps.
+`.github/workflows/release.yml` runs on every merge to `main`: it packages an installable zip
+**per Inventor version** (2025/2026/2027) — each bundling the add-in, its dependencies and the
+matching `Autodesk.Inventor.Interop.dll` — and attaches them to a GitHub **prerelease**
+(`v0.1.<run>`). Build one by hand with:
+
+```
+scripts/package.sh 2027 0.1.0 Oblikovati.Exporter.Inventor-0.1.0-2027.zip
+```
+
+See `deploy/README.md` for install steps.
 
 ## License
 
