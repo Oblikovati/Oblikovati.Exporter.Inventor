@@ -105,6 +105,8 @@ Explicit constraints/dimensions are also read (coincidence stays inferred from m
 | `TwoPointDistanceDimConstraint.PointOne`/`.PointTwo` / `.Parameter` | `SketchPoint` / `Parameter` |
 | `RadiusDimConstraint`/`DiameterDimConstraint.Entity` / `.Parameter` | `SketchEntity` (cast `SketchCircle`) / `Parameter` |
 | `TwoLineAngleDimConstraint.LineOne`/`.LineTwo` / `.Parameter` | the two lines + the angle expression |
+| `SymmetryConstraint.EntityOne`/`.EntityTwo`/`.SymmetryLine` | two points symmetric about a line (read when both entities resolve to points) |
+| `GroundConstraint.Entity` | grounds an entity — emitted as a `ground` of all the entity's defining points |
 | `Parameter.Expression` | `string` (the dimension's driving expression, e.g. "width") |
 
 Constraints/dimensions are matched by their concrete COM type (pattern matching), and their
@@ -270,7 +272,7 @@ tessellation is a later step. Both are also volume-round-tripped (a ~31.4 cm³ c
 - **hole placement variants**: sketch-, linear-, and concentric-placed holes are skipped; only a
   point placement whose `Direction` is a planar `Face` is read.
 
-Also pending: symmetry/ground constraints and explicit coincidence (coincidence is inferred from
+Also pending: smooth (G2) constraints and explicit coincidence (coincidence is inferred from
 meeting endpoints, which covers profile closure); and arc/spline sweep paths. Ellipses and
 elliptical arcs round-trip by the open check
 only — Oblikovati has no ellipse radius dimension, so they cannot be driven to DOF 0 (same

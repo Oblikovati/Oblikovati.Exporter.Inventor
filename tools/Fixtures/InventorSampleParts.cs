@@ -424,7 +424,7 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             var doc = new InventorDocument { DisplayName = "constraint-sampler", Kind = InventorDocumentKind.Part };
             doc.Parameters.Add(new InventorParameter { Name = "ang", Expression = "45 deg", Unit = "deg" });
             var sketch = new InventorSketch { Name = "Sampler" };
-            const long l0 = 1, l1 = 2, c0 = 3, c1 = 4, lt = 5, ct = 6, la = 7;
+            const long l0 = 1, l1 = 2, c0 = 3, c1 = 4, lt = 5, ct = 6, la = 7, lsa = 8, lsb = 9, lx = 10;
             sketch.Curves.Add(Line(l0, 0, 0, 2, 0));
             sketch.Curves.Add(Line(l1, 3, 0, 5, 0));         // collinear + equal length to l0
             sketch.Curves.Add(Circle(c0, 0, 5, 1));
@@ -432,12 +432,28 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
             sketch.Curves.Add(Line(lt, 10, 1, 14, 1));
             sketch.Curves.Add(Circle(ct, 12, 3, 2));         // tangent: line y=1 is 2 below centre
             sketch.Curves.Add(Line(la, 0, 0, 2, 2));         // 45° to l0
+            sketch.Curves.Add(Line(lsa, -3, 4, -3, 6));      // symmetric pair about lx
+            sketch.Curves.Add(Line(lsb, 3, 4, 3, 6));
+            sketch.Curves.Add(Line(lx, 0, 3, 0, 7));         // vertical symmetry axis at x=0
 
             sketch.Constraints.Add(Between(InventorConstraintKind.Collinear, l0, l1));
             sketch.Constraints.Add(Between(InventorConstraintKind.EqualLength, l0, l1));
             sketch.Constraints.Add(Between(InventorConstraintKind.Concentric, c0, c1));
             sketch.Constraints.Add(Between(InventorConstraintKind.EqualRadius, c0, c1));
             sketch.Constraints.Add(Between(InventorConstraintKind.Tangent, lt, ct));
+
+            // Ground the tangent line (pins both endpoints).
+            var ground = new InventorSketchConstraint { Kind = InventorConstraintKind.Ground };
+            ground.Points.Add(new InventorPointRef(lt, InventorCurvePointRole.Start));
+            ground.Points.Add(new InventorPointRef(lt, InventorCurvePointRole.End));
+            sketch.Constraints.Add(ground);
+
+            // Symmetry: the two pair lines' start points are symmetric about lx.
+            var symmetry = new InventorSketchConstraint { Kind = InventorConstraintKind.Symmetry };
+            symmetry.Points.Add(new InventorPointRef(lsa, InventorCurvePointRole.Start));
+            symmetry.Points.Add(new InventorPointRef(lsb, InventorCurvePointRole.Start));
+            symmetry.Curves.Add(lx);
+            sketch.Constraints.Add(symmetry);
 
             var angle = new InventorSketchDimension { Kind = InventorDimensionKind.Angle, Expression = "ang" };
             angle.Curves.Add(l0);

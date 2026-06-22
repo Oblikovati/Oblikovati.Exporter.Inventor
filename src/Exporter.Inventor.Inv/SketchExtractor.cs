@@ -59,7 +59,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractEllipticalArcs(sketch.SketchEllipticalArcs, result, curveIds, pointRefs, ref nextId);
 
             InferCoincidences(result);
-            ExtractConstraints(sketch.GeometricConstraints, result, curveIds);
+            ExtractConstraints(sketch.GeometricConstraints, result, curveIds, pointRefs);
             ExtractDimensions(sketch.DimensionConstraints, result, curveIds, pointRefs);
             return result.Curves.Count == 0 ? null : result;
         }
@@ -239,7 +239,8 @@ namespace Oblikovati.Exporter.Inventor.Inv
         // Reads the orientation/relation constraints (coincidence is already inferred). An operand
         // that did not map to an extracted curve (e.g. an unsupported entity) skips the constraint.
         private static void ExtractConstraints(
-            GeometricConstraints constraints, InventorSketch result, IDictionary<object, long> curveIds)
+            GeometricConstraints constraints, InventorSketch result,
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs)
         {
             for (int i = 1; i <= constraints.Count; i++)
             {
@@ -271,6 +272,12 @@ namespace Oblikovati.Exporter.Inventor.Inv
                         break;
                     case EqualRadiusConstraint er:
                         AddBetweenCurves(result, InventorConstraintKind.EqualRadius, curveIds, er.EntityOne, er.EntityTwo);
+                        break;
+                    case SymmetryConstraint sym:
+                        AddSymmetry(result, curveIds, pointRefs, sym);
+                        break;
+                    case GroundConstraint g:
+                        AddGround(result, curveIds, g.Entity);
                         break;
                 }
             }
@@ -320,6 +327,90 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 c.Curves.Add(ida);
                 c.Curves.Add(idb);
                 result.Constraints.Add(c);
+            }
+        }
+
+        // Two entities symmetric about a line. The engine's symmetry is point-based, so this is
+        // read only when both entities resolve to points (e.g. curve endpoints) and the axis to a curve.
+        private static void AddSymmetry(
+            InventorSketch result, IDictionary<object, long> curveIds,
+            IDictionary<object, InventorPointRef> pointRefs, SymmetryConstraint sym)
+        {
+            if (pointRefs.TryGetValue(sym.EntityOne, out InventorPointRef a) &&
+                pointRefs.TryGetValue(sym.EntityTwo, out InventorPointRef b) &&
+                curveIds.TryGetValue(sym.SymmetryLine, out long axis))
+            {
+                var c = new InventorSketchConstraint { Kind = InventorConstraintKind.Symmetry };
+                c.Points.Add(a);
+                c.Points.Add(b);
+                c.Curves.Add(axis);
+                result.Constraints.Add(c);
+            }
+        }
+
+        // Grounds (fixes) an entity by pinning all of its defining points.
+        private static void AddGround(InventorSketch result, IDictionary<object, long> curveIds, object entity)
+        {
+            if (!curveIds.TryGetValue(entity, out long id))
+            {
+                return;
+            }
+
+            InventorCurve? curve = FindCurve(result, id);
+            if (curve == null)
+            {
+                return;
+            }
+
+            var c = new InventorSketchConstraint { Kind = InventorConstraintKind.Ground };
+            foreach (InventorPointRef p in PointRefsOf(curve))
+            {
+                c.Points.Add(p);
+            }
+
+            if (c.Points.Count > 0)
+            {
+                result.Constraints.Add(c);
+            }
+        }
+
+        private static InventorCurve? FindCurve(InventorSketch sketch, long id)
+        {
+            foreach (InventorCurve c in sketch.Curves)
+            {
+                if (c.Id == id)
+                {
+                    return c;
+                }
+            }
+
+            return null;
+        }
+
+        // The defining points of a curve, by role (matching how the point table allocates them).
+        private static IEnumerable<InventorPointRef> PointRefsOf(InventorCurve curve)
+        {
+            switch (curve.Kind)
+            {
+                case InventorCurveKind.Line:
+                    yield return new InventorPointRef(curve.Id, InventorCurvePointRole.Start);
+                    yield return new InventorPointRef(curve.Id, InventorCurvePointRole.End);
+                    break;
+                case InventorCurveKind.Arc:
+                    yield return new InventorPointRef(curve.Id, InventorCurvePointRole.Center);
+                    yield return new InventorPointRef(curve.Id, InventorCurvePointRole.Start);
+                    yield return new InventorPointRef(curve.Id, InventorCurvePointRole.End);
+                    break;
+                case InventorCurveKind.Spline:
+                    for (int i = 0; i < curve.SplinePoints.Count; i++)
+                    {
+                        yield return new InventorPointRef(curve.Id, InventorCurvePointRole.SplinePoint, i);
+                    }
+
+                    break;
+                default: // Circle, Ellipse, EllipticalArc
+                    yield return new InventorPointRef(curve.Id, InventorCurvePointRole.Center);
+                    break;
             }
         }
 

@@ -107,6 +107,39 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
 
         [Fact]
+        public void Reads_a_ground_constraint_as_all_of_a_lines_points()
+        {
+            SketchLine line = FakeSketchLine.From(10, 1, 14, 1);
+            var constraints = new List<GeometricConstraint> { new FakeGroundConstraint(line) };
+
+            InventorSketch sk = Extract(
+                new List<SketchLine> { line }, new List<SketchCircle>(), constraints, new List<DimensionConstraint>());
+
+            InventorSketchConstraint ground = Assert.Single(sk.Constraints, c => c.Kind == InventorConstraintKind.Ground);
+            Assert.Equal(2, ground.Points.Count); // the line's two endpoints
+        }
+
+        [Fact]
+        public void Reads_a_symmetry_constraint_between_two_endpoints_about_an_axis()
+        {
+            SketchLine a = FakeSketchLine.From(-3, 4, -3, 6);
+            SketchLine b = FakeSketchLine.From(3, 4, 3, 6);
+            SketchLine axis = FakeSketchLine.From(0, 3, 0, 7);
+            var constraints = new List<GeometricConstraint>
+            {
+                new FakeSymmetryConstraint(a.StartSketchPoint, b.StartSketchPoint, axis),
+            };
+
+            InventorSketch sk = Extract(
+                new List<SketchLine> { a, b, axis }, new List<SketchCircle>(),
+                constraints, new List<DimensionConstraint>());
+
+            InventorSketchConstraint sym = Assert.Single(sk.Constraints, c => c.Kind == InventorConstraintKind.Symmetry);
+            Assert.Equal(2, sym.Points.Count); // the two symmetric points
+            Assert.Single(sym.Curves);         // the axis line
+        }
+
+        [Fact]
         public void Reads_diameter_dimension_on_a_circle()
         {
             SketchCircle circle = new FakeSketchCircle(0, 0, 2);

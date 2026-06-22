@@ -137,6 +137,8 @@ namespace Oblikovati.Exporter.Inventor.Model
         PointOnLine,
         Midpoint,
         Fix,
+        Symmetry,
+        Ground,
     }
 
     /// <summary>
