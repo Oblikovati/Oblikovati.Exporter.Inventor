@@ -37,11 +37,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly DimensionConstraints _dimensions;
         private readonly SketchArcs _arcs;
         private readonly SketchSplines _splines;
+        private readonly SketchControlPointSplines _ctrlSplines;
 
         public FakePlanarSketch(
             string name, Point origin, Line axis, Plane plane, IList<SketchLine> lines, IList<SketchCircle> circles,
             IList<GeometricConstraint>? constraints = null, IList<DimensionConstraint>? dimensions = null,
-            IList<SketchArc>? arcs = null, IList<SketchSpline>? splines = null)
+            IList<SketchArc>? arcs = null, IList<SketchSpline>? splines = null,
+            IList<SketchControlPointSpline>? controlPointSplines = null)
         {
             _name = name;
             _origin = origin;
@@ -53,6 +55,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _dimensions = new FakeDimensionConstraints(dimensions ?? new List<DimensionConstraint>());
             _arcs = new FakeSketchArcs(arcs ?? new List<SketchArc>());
             _splines = new FakeSketchSplines(splines ?? new List<SketchSpline>());
+            _ctrlSplines = new FakeSketchControlPointSplines(
+                controlPointSplines ?? new List<SketchControlPointSpline>());
         }
 
         public override string Name => _name;
@@ -74,6 +78,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override SketchArcs SketchArcs => _arcs;
 
         public override SketchSplines SketchSplines => _splines;
+
+        public override SketchControlPointSplines SketchControlPointSplines => _ctrlSplines;
 
         /// <summary>A unit square (side 4 cm) of four coincident lines on the XY origin plane.</summary>
         public static FakePlanarSketch Square()
@@ -166,6 +172,32 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override int FitPointCount => _fitPoints.Length;
         public override SketchPoint get_FitPoint(int index) => _fitPoints[index - 1];
         public override bool Closed => _closed;
+        public override bool Construction => false;
+    }
+
+    public sealed class FakeSketchControlPointSplines : SketchControlPointSplines
+    {
+        private readonly IList<SketchControlPointSpline> _items;
+        public FakeSketchControlPointSplines(IList<SketchControlPointSpline> items) => _items = items;
+        public override int Count => _items.Count;
+        public override SketchControlPointSpline this[int index] => _items[index - 1];
+    }
+
+    /// <summary>A control-point spline over the given 2D control points.</summary>
+    public sealed class FakeSketchControlPointSpline : SketchControlPointSpline
+    {
+        private readonly SketchPoint[] _controlPoints;
+        private readonly bool _closed;
+        public FakeSketchControlPointSpline(bool closed, double[][] points)
+        {
+            _closed = closed;
+            _controlPoints = new SketchPoint[points.Length];
+            for (int i = 0; i < points.Length; i++)
+                _controlPoints[i] = new FakeSketchPoint(points[i][0], points[i][1]);
+        }
+        public override int ControlPointCount => _controlPoints.Length;
+        public override SketchPoint get_ControlPoint(int index) => _controlPoints[index - 1];
+        public override bool IsClosed => _closed;
         public override bool Construction => false;
     }
 

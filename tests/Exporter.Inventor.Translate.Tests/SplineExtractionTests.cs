@@ -47,6 +47,31 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
 
         [Fact]
+        public void Extracts_a_closed_control_point_spline_as_a_non_fit_spline()
+        {
+            var pts = new double[][]
+            {
+                new double[] { 0, 0 }, new double[] { 4, 0 }, new double[] { 4, 3 }, new double[] { 0, 3 },
+            };
+            var ctrl = new List<SketchControlPointSpline> { new FakeSketchControlPointSpline(true, pts) };
+            var sketch = new FakePlanarSketch(
+                "Ctrl", new FakePoint(0, 0, 0), new FakeLine(new FakeUnitVector(1, 0, 0)),
+                new FakePlane(new FakeUnitVector(0, 0, 1)),
+                new List<SketchLine>(), new List<SketchCircle>(), controlPointSplines: ctrl);
+            var doc = new FakePartDocument(
+                "p.ipt", @"C:\work\p.ipt", new FakeUnitsOfMeasure(), new List<UserParameter>(),
+                new List<PlanarSketch> { sketch });
+
+            InventorSketch sk =
+                new InventorSessionAdapter(new FakeInventorApplication(doc)).ExtractActiveDocument().Sketches[0];
+
+            InventorCurve spline = Assert.Single(sk.Curves, c => c.Kind == InventorCurveKind.Spline);
+            Assert.Equal(4, spline.SplinePoints.Count);
+            Assert.True(spline.Closed);
+            Assert.False(spline.Fit); // control-point, not interpolating
+        }
+
+        [Fact]
         public void Translates_a_spline_to_a_spline_entity_with_all_its_points()
         {
             OblikovatiDocument recipe =

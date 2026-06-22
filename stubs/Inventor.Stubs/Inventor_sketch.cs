@@ -27,6 +27,8 @@ namespace Inventor
 
         public virtual SketchSplines SketchSplines => throw Stub.Error();
 
+        public virtual SketchControlPointSplines SketchControlPointSplines => throw Stub.Error();
+
         public virtual GeometricConstraints GeometricConstraints => throw Stub.Error();
 
         public virtual DimensionConstraints DimensionConstraints => throw Stub.Error();
@@ -126,6 +128,29 @@ namespace Inventor
         public virtual SketchPoint get_FitPoint(int index) => throw Stub.Error();
 
         public virtual bool Closed => throw Stub.Error();
+
+        public virtual bool Construction => throw Stub.Error();
+    }
+
+    /// <summary>Stub of the control-point-splines collection (int-indexed, 1-based).</summary>
+    public class SketchControlPointSplines
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual SketchControlPointSpline this[int index] => throw Stub.Error();
+    }
+
+    /// <summary>
+    /// Stub of one control-point sketch spline. Control points are read by index via
+    /// get_ControlPoint (a parameterized COM property → method), 1-based, count = ControlPointCount.
+    /// </summary>
+    public class SketchControlPointSpline
+    {
+        public virtual int ControlPointCount => throw Stub.Error();
+
+        public virtual SketchPoint get_ControlPoint(int index) => throw Stub.Error();
+
+        public virtual bool IsClosed => throw Stub.Error();
 
         public virtual bool Construction => throw Stub.Error();
     }
