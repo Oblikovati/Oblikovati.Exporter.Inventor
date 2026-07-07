@@ -167,6 +167,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
         public override object Geometry => _plane;
         public override Vertices Vertices => _vertices;
+        public override bool IsParamReversed => false; // fake normals are already outward
     }
 
     public sealed class FakeVertices : Vertices
