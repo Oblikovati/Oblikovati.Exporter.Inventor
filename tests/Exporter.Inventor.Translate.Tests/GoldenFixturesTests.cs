@@ -60,6 +60,18 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
 
         [Fact]
+        public void Arc_radius_part_emits_a_radius_dimension_on_an_arc()
+        {
+            // Guards the arc-radius round-trip fixture: the emitter must produce a radius
+            // dimension whose target is the arc (the case the reader used to reject as
+            // "want a circle"). The reader-side fix is covered by the Go restore test.
+            string yaml = Emit(InventorSampleParts.ArcRadiusPart());
+
+            Assert.Contains("kind: arc", yaml);
+            Assert.Contains("kind: radius", yaml);
+        }
+
+        [Fact]
         public void Box_part_emits_an_extrude_feature_over_its_sketch()
         {
             string yaml = Emit(InventorSampleParts.BoxPart());

@@ -19,7 +19,7 @@ namespace Oblikovati.Exporter.Inventor.Tests
             _document = document;
         }
 
-        public InventorDocument ExtractActiveDocument() => _document;
+        public InventorDocument ExtractActiveDocument(ExportReport report) => _document;
 
         public string OutputDirectory() => ".";
 

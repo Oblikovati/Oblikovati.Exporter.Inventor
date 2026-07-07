@@ -19,12 +19,21 @@ namespace Oblikovati.Exporter.Inventor.Inv
     {
         private const double CoincidenceTol = 1e-5; // cm, in sketch 2D
 
-        public static void Extract(PartDocument document, InventorDocument ir)
+        public static void Extract(PartDocument document, InventorDocument ir, ExportReport report)
         {
+            // The user parameters (already extracted into the IR) are the only names a dimension
+            // expression may safely reference; a reference to any other (Inventor auto-named model)
+            // parameter cannot round-trip and is collapsed to a value — see InventorExpression.ForDimension.
+            var userParams = new HashSet<string>();
+            foreach (InventorParameter p in ir.Parameters)
+            {
+                userParams.Add(p.Name);
+            }
+
             PlanarSketches sketches = document.ComponentDefinition.Sketches;
             for (int i = 1; i <= sketches.Count; i++)
             {
-                InventorSketch? extracted = ExtractOne(sketches[i]);
+                InventorSketch? extracted = ExtractOne(sketches[i], report, userParams);
                 if (extracted != null)
                 {
                     ir.Sketches.Add(extracted);
@@ -32,7 +41,8 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
         }
 
-        private static InventorSketch? ExtractOne(PlanarSketch sketch)
+        private static InventorSketch? ExtractOne(
+            PlanarSketch sketch, ExportReport report, ISet<string> userParams)
         {
             UnitVector xAxis = sketch.AxisEntityGeometry.Direction;
             UnitVector yAxis = sketch.PlanarEntityGeometry.Normal.CrossProduct(xAxis);
@@ -59,8 +69,8 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractEllipticalArcs(sketch.SketchEllipticalArcs, result, curveIds, pointRefs, ref nextId);
 
             InferCoincidences(result);
-            ExtractConstraints(sketch.GeometricConstraints, result, curveIds, pointRefs);
-            ExtractDimensions(sketch.DimensionConstraints, result, curveIds, pointRefs);
+            ExtractConstraints(sketch.GeometricConstraints, result, curveIds, pointRefs, report);
+            ExtractDimensions(sketch.DimensionConstraints, result, curveIds, pointRefs, report, userParams);
             return result.Curves.Count == 0 ? null : result;
         }
 
@@ -71,18 +81,27 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= lines.Count; i++)
             {
                 SketchLine line = lines[i];
+                // A projected reference line can carry null Start/End sketch points; it is not part
+                // of the sketch's own profile, so skip it rather than dereferencing null.
+                SketchPoint start = line.StartSketchPoint;
+                SketchPoint end = line.EndSketchPoint;
+                if (start == null || end == null)
+                {
+                    continue;
+                }
+
                 long id = nextId++;
                 result.Curves.Add(new InventorCurve
                 {
                     Id = id,
                     Kind = InventorCurveKind.Line,
-                    Start = P2(line.StartSketchPoint.Geometry),
-                    End = P2(line.EndSketchPoint.Geometry),
+                    Start = P2(start.Geometry),
+                    End = P2(end.Geometry),
                     Construction = line.Construction,
                 });
                 curveIds[line] = id;
-                pointRefs[line.StartSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Start);
-                pointRefs[line.EndSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.End);
+                pointRefs[start] = new InventorPointRef(id, InventorCurvePointRole.Start);
+                pointRefs[end] = new InventorPointRef(id, InventorCurvePointRole.End);
             }
         }
 
@@ -236,81 +255,124 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
         }
 
-        // Reads the orientation/relation constraints (coincidence is already inferred). An operand
-        // that did not map to an extracted curve (e.g. an unsupported entity) skips the constraint.
+        // Reads the orientation/relation constraints (coincidence is already inferred). A handled
+        // constraint whose operand did not map to extracted geometry (e.g. an unsupported entity)
+        // is recorded on the report rather than dropped silently; constraint types not handled here
+        // (coincidence and any we don't model) fall through untouched and are not reported.
         private static void ExtractConstraints(
             GeometricConstraints constraints, InventorSketch result,
-            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs)
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs, ExportReport report)
         {
             for (int i = 1; i <= constraints.Count; i++)
             {
+                bool ok;
+                string kind;
                 switch (constraints[i])
                 {
                     case HorizontalConstraint h:
-                        AddOnCurve(result, InventorConstraintKind.Horizontal, curveIds, h.Entity);
+                        kind = "horizontal";
+                        ok = AddOnCurve(result, InventorConstraintKind.Horizontal, curveIds, h.Entity);
                         break;
                     case VerticalConstraint v:
-                        AddOnCurve(result, InventorConstraintKind.Vertical, curveIds, v.Entity);
+                        kind = "vertical";
+                        ok = AddOnCurve(result, InventorConstraintKind.Vertical, curveIds, v.Entity);
                         break;
                     case ParallelConstraint p:
-                        AddBetweenCurves(result, InventorConstraintKind.Parallel, curveIds, p.EntityOne, p.EntityTwo);
+                        kind = "parallel";
+                        ok = AddBetweenCurves(result, InventorConstraintKind.Parallel, curveIds, p.EntityOne, p.EntityTwo);
                         break;
                     case PerpendicularConstraint pp:
-                        AddBetweenCurves(result, InventorConstraintKind.Perpendicular, curveIds, pp.EntityOne, pp.EntityTwo);
+                        kind = "perpendicular";
+                        ok = AddBetweenCurves(result, InventorConstraintKind.Perpendicular, curveIds, pp.EntityOne, pp.EntityTwo);
                         break;
                     case CollinearConstraint col:
-                        AddBetweenCurves(result, InventorConstraintKind.Collinear, curveIds, col.EntityOne, col.EntityTwo);
+                        kind = "collinear";
+                        ok = AddBetweenCurves(result, InventorConstraintKind.Collinear, curveIds, col.EntityOne, col.EntityTwo);
                         break;
                     case ConcentricConstraint con:
-                        AddBetweenCurves(result, InventorConstraintKind.Concentric, curveIds, con.EntityOne, con.EntityTwo);
+                        kind = "concentric";
+                        ok = AddBetweenCurves(result, InventorConstraintKind.Concentric, curveIds, con.EntityOne, con.EntityTwo);
                         break;
                     case TangentConstraint tan:
-                        AddBetweenCurves(result, InventorConstraintKind.Tangent, curveIds, tan.EntityOne, tan.EntityTwo);
+                        kind = "tangent";
+                        ok = AddBetweenCurves(result, InventorConstraintKind.Tangent, curveIds, tan.EntityOne, tan.EntityTwo);
                         break;
                     case EqualLengthConstraint eq:
-                        AddBetweenCurves(result, InventorConstraintKind.EqualLength, curveIds, eq.LineOne, eq.LineTwo);
+                        kind = "equal-length";
+                        ok = AddBetweenCurves(result, InventorConstraintKind.EqualLength, curveIds, eq.LineOne, eq.LineTwo);
                         break;
                     case EqualRadiusConstraint er:
-                        AddBetweenCurves(result, InventorConstraintKind.EqualRadius, curveIds, er.EntityOne, er.EntityTwo);
+                        kind = "equal-radius";
+                        ok = AddBetweenCurves(result, InventorConstraintKind.EqualRadius, curveIds, er.EntityOne, er.EntityTwo);
                         break;
                     case SymmetryConstraint sym:
-                        AddSymmetry(result, curveIds, pointRefs, sym);
+                        kind = "symmetry";
+                        ok = AddSymmetry(result, curveIds, pointRefs, sym);
                         break;
                     case GroundConstraint g:
-                        AddGround(result, curveIds, g.Entity);
+                        kind = "ground";
+                        ok = AddGround(result, curveIds, pointRefs, g.Entity);
                         break;
                     case SmoothConstraint sm:
-                        AddSmooth(result, curveIds, sm.EntityOne, sm.EntityTwo);
+                        kind = "smooth";
+                        ok = AddSmooth(result, curveIds, sm.EntityOne, sm.EntityTwo);
                         break;
+                    default:
+                        continue; // not modelled here (e.g. coincidence, inferred geometrically)
+                }
+
+                if (!ok)
+                {
+                    report.Skip(
+                        $"sketch-constraint '{kind}' in sketch '{result.Name}'",
+                        "could not be represented from the extracted sketch geometry");
                 }
             }
         }
 
         private static void ExtractDimensions(
             DimensionConstraints dimensions, InventorSketch result,
-            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs)
+            IDictionary<object, long> curveIds, IDictionary<object, InventorPointRef> pointRefs,
+            ExportReport report, ISet<string> userParams)
         {
             for (int i = 1; i <= dimensions.Count; i++)
             {
+                bool ok;
+                string kind;
                 switch (dimensions[i])
                 {
                     case TwoPointDistanceDimConstraint d:
-                        AddDistance(result, pointRefs, d);
+                        kind = "distance";
+                        ok = AddDistance(result, pointRefs, d, userParams);
                         break;
                     case RadiusDimConstraint r:
-                        AddCurveDimension(result, InventorDimensionKind.Radius, curveIds, r.Entity, r.Parameter);
+                        kind = "radius";
+                        ok = AddCurveDimension(result, InventorDimensionKind.Radius, curveIds, r.Entity, r.Parameter, userParams);
                         break;
                     case DiameterDimConstraint dia:
-                        AddCurveDimension(result, InventorDimensionKind.Diameter, curveIds, dia.Entity, dia.Parameter);
+                        kind = "diameter";
+                        ok = AddCurveDimension(result, InventorDimensionKind.Diameter, curveIds, dia.Entity, dia.Parameter, userParams);
                         break;
                     case TwoLineAngleDimConstraint ang:
-                        AddAngleDimension(result, curveIds, ang);
+                        kind = "angle";
+                        ok = AddAngleDimension(result, curveIds, ang, userParams);
                         break;
+                    default:
+                        continue; // dimension type we don't model
+                }
+
+                if (!ok)
+                {
+                    report.Skip(
+                        $"sketch-dimension '{kind}' in sketch '{result.Name}'",
+                        "could not be represented from the extracted sketch geometry");
                 }
             }
         }
 
-        private static void AddOnCurve(
+        // Each Add* returns true when it emitted the constraint/dimension, false when an operand
+        // could not be resolved to extracted geometry (so the caller can record the drop).
+        private static bool AddOnCurve(
             InventorSketch result, InventorConstraintKind kind, IDictionary<object, long> curveIds, object entity)
         {
             if (curveIds.TryGetValue(entity, out long id))
@@ -318,10 +380,13 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 var c = new InventorSketchConstraint { Kind = kind };
                 c.Curves.Add(id);
                 result.Constraints.Add(c);
+                return true;
             }
+
+            return false;
         }
 
-        private static void AddBetweenCurves(
+        private static bool AddBetweenCurves(
             InventorSketch result, InventorConstraintKind kind, IDictionary<object, long> curveIds, object a, object b)
         {
             if (curveIds.TryGetValue(a, out long ida) && curveIds.TryGetValue(b, out long idb))
@@ -330,12 +395,15 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 c.Curves.Add(ida);
                 c.Curves.Add(idb);
                 result.Constraints.Add(c);
+                return true;
             }
+
+            return false;
         }
 
         // Two entities symmetric about a line. The engine's symmetry is point-based, so this is
         // read only when both entities resolve to points (e.g. curve endpoints) and the axis to a curve.
-        private static void AddSymmetry(
+        private static bool AddSymmetry(
             InventorSketch result, IDictionary<object, long> curveIds,
             IDictionary<object, InventorPointRef> pointRefs, SymmetryConstraint sym)
         {
@@ -348,50 +416,63 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 c.Points.Add(b);
                 c.Curves.Add(axis);
                 result.Constraints.Add(c);
+                return true;
             }
+
+            return false;
         }
 
-        // Grounds (fixes) an entity by pinning all of its defining points.
-        private static void AddGround(InventorSketch result, IDictionary<object, long> curveIds, object entity)
+        // Grounds (fixes) an entity by pinning its defining points. Inventor can ground either a
+        // curve (fixing all of its points) or a single sketch point (e.g. pinning an origin corner),
+        // so resolve a curve via curveIds and a point via pointRefs.
+        private static bool AddGround(
+            InventorSketch result, IDictionary<object, long> curveIds,
+            IDictionary<object, InventorPointRef> pointRefs, object entity)
         {
-            if (!curveIds.TryGetValue(entity, out long id))
-            {
-                return;
-            }
-
-            InventorCurve? curve = FindCurve(result, id);
-            if (curve == null)
-            {
-                return;
-            }
-
             var c = new InventorSketchConstraint { Kind = InventorConstraintKind.Ground };
-            foreach (InventorPointRef p in PointRefsOf(curve))
+
+            if (curveIds.TryGetValue(entity, out long id))
             {
-                c.Points.Add(p);
+                InventorCurve? curve = FindCurve(result, id);
+                if (curve == null)
+                {
+                    return false;
+                }
+
+                foreach (InventorPointRef p in PointRefsOf(curve))
+                {
+                    c.Points.Add(p);
+                }
+            }
+            else if (pointRefs.TryGetValue(entity, out InventorPointRef point))
+            {
+                c.Points.Add(point);
             }
 
             if (c.Points.Count > 0)
             {
                 result.Constraints.Add(c);
+                return true;
             }
+
+            return false;
         }
 
         // Smooth (G2) between two curves: emit the two curves plus their coincident junction
         // points (the shared endpoint, one ref per curve), which the engine's smooth needs.
-        private static void AddSmooth(
+        private static bool AddSmooth(
             InventorSketch result, IDictionary<object, long> curveIds, object entityOne, object entityTwo)
         {
             if (!curveIds.TryGetValue(entityOne, out long id1) || !curveIds.TryGetValue(entityTwo, out long id2))
             {
-                return;
+                return false;
             }
 
             InventorCurve? a = FindCurve(result, id1);
             InventorCurve? b = FindCurve(result, id2);
             if (a == null || b == null)
             {
-                return;
+                return false;
             }
 
             foreach ((InventorPointRef Ref, double[] Pt) ea in EndpointSlots(a))
@@ -406,10 +487,12 @@ namespace Oblikovati.Exporter.Inventor.Inv
                         c.Curves.Add(id1);
                         c.Curves.Add(id2);
                         result.Constraints.Add(c);
-                        return;
+                        return true;
                     }
                 }
             }
+
+            return false;
         }
 
         // A curve's free endpoints (where it can join another smoothly) with their coordinates.
@@ -470,8 +553,9 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
         }
 
-        private static void AddDistance(
-            InventorSketch result, IDictionary<object, InventorPointRef> pointRefs, TwoPointDistanceDimConstraint d)
+        private static bool AddDistance(
+            InventorSketch result, IDictionary<object, InventorPointRef> pointRefs,
+            TwoPointDistanceDimConstraint d, ISet<string> userParams)
         {
             if (pointRefs.TryGetValue(d.PointOne, out InventorPointRef a) &&
                 pointRefs.TryGetValue(d.PointTwo, out InventorPointRef b))
@@ -479,37 +563,61 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 var dim = new InventorSketchDimension
                 {
                     Kind = InventorDimensionKind.Distance,
-                    Expression = d.Parameter.Expression,
+                    Expression = DimensionExpression(d.Parameter, isAngle: false, userParams),
                 };
                 dim.Points.Add(a);
                 dim.Points.Add(b);
                 result.Dimensions.Add(dim);
+                return true;
             }
+
+            return false;
         }
 
-        private static void AddCurveDimension(
+        private static bool AddCurveDimension(
             InventorSketch result, InventorDimensionKind kind,
-            IDictionary<object, long> curveIds, object entity, Parameter parameter)
+            IDictionary<object, long> curveIds, object entity, Parameter parameter, ISet<string> userParams)
         {
             if (curveIds.TryGetValue(entity, out long id))
             {
-                var dim = new InventorSketchDimension { Kind = kind, Expression = parameter.Expression };
+                var dim = new InventorSketchDimension
+                {
+                    Kind = kind,
+                    Expression = DimensionExpression(parameter, isAngle: false, userParams),
+                };
                 dim.Curves.Add(id);
                 result.Dimensions.Add(dim);
+                return true;
             }
+
+            return false;
         }
 
-        private static void AddAngleDimension(
-            InventorSketch result, IDictionary<object, long> curveIds, TwoLineAngleDimConstraint a)
+        private static bool AddAngleDimension(
+            InventorSketch result, IDictionary<object, long> curveIds,
+            TwoLineAngleDimConstraint a, ISet<string> userParams)
         {
             if (curveIds.TryGetValue(a.LineOne, out long ida) && curveIds.TryGetValue(a.LineTwo, out long idb))
             {
-                var dim = new InventorSketchDimension { Kind = InventorDimensionKind.Angle, Expression = a.Parameter.Expression };
+                var dim = new InventorSketchDimension
+                {
+                    Kind = InventorDimensionKind.Angle,
+                    Expression = DimensionExpression(a.Parameter, isAngle: true, userParams),
+                };
                 dim.Curves.Add(ida);
                 dim.Curves.Add(idb);
                 result.Dimensions.Add(dim);
+                return true;
             }
+
+            return false;
         }
+
+        // A dimension's driving expression, made safe for the reader: verbatim when it is a literal
+        // or references only user parameters, else collapsed to its model value (see
+        // InventorExpression.ForDimension). _Value is the evaluated value in database units.
+        private static string DimensionExpression(Parameter parameter, bool isAngle, ISet<string> userParams) =>
+            InventorExpression.ForDimension(parameter.Expression, parameter._Value, isAngle, userParams);
 
         // Reference-equality dictionary so the same COM entity (one RCW per COM object) resolves
         // to the curve/point it became, independent of value equality.

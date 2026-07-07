@@ -360,12 +360,64 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
                 Ccw = true, // upper semicircle
             });
             // The arc's center/start/end fully fix it: pin both diameter ends + the centre, and
-            // coincide the arc ends to the diameter ends. (Oblikovati's radius dim is circle-only.)
+            // coincide the arc ends to the diameter ends.
             Coincide(sketch, l0, InventorCurvePointRole.End, a1, InventorCurvePointRole.Start);
             Coincide(sketch, a1, InventorCurvePointRole.End, l0, InventorCurvePointRole.Start);
             sketch.Constraints.Add(Fix(l0, InventorCurvePointRole.Start));
             sketch.Constraints.Add(Fix(l0, InventorCurvePointRole.End));
             sketch.Constraints.Add(Fix(a1, InventorCurvePointRole.Center));
+
+            doc.Sketches.Add(sketch);
+            doc.Features.Add(new InventorExtrude
+            {
+                Name = "Extrude1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = InventorOperation.NewBody,
+                Direction = InventorExtentDirection.Positive,
+                Distance = 5,
+            });
+            return doc;
+        }
+
+        /// <summary>
+        /// A half-disc whose semicircular arc is sized by a <em>radius dimension on the arc</em>
+        /// (not the circle-only path). This is the single most common real-world case — Inventor
+        /// radius-dimensions arcs constantly — and the reader used to reject it on open with
+        /// "entity N is *sketch.Arc, want a circle", blocking ~40% of exported parts. The diameter
+        /// line closes the profile; the arc's radius is driven to 2 cm, so the extruded body is the
+        /// same 10π cm³ half-cylinder as <see cref="ArcExtrudePart"/>.
+        /// </summary>
+        public static InventorDocument ArcRadiusPart()
+        {
+            var doc = new InventorDocument { DisplayName = "arc-radius", Kind = InventorDocumentKind.Part };
+            doc.Parameters.Add(new InventorParameter { Name = "rad", Expression = "20 mm", Unit = "mm" });
+
+            var sketch = new InventorSketch { Name = "HalfDisc" };
+            const long l0 = 1, a1 = 2;
+            sketch.Curves.Add(Line(l0, -2, 0, 2, 0)); // the diameter
+            sketch.Curves.Add(new InventorCurve
+            {
+                Id = a1,
+                Kind = InventorCurveKind.Arc,
+                Center = new double[] { 0, 0 },
+                Start = new double[] { 2, 0 },
+                End = new double[] { -2, 0 },
+                Ccw = true, // upper semicircle
+            });
+            // Pin the centre and one diameter end; the arc ends coincide with the diameter ends,
+            // the diameter stays horizontal, and the RADIUS DIMENSION on the arc fixes the free end
+            // (|centre→start| = rad). Center(2) + fixed end(2) + coincidences(2×2) + horizontal(1) +
+            // radius(1) balance the free diameter/arc-start point → DOF 0, exercising the arc-radius
+            // restore path end-to-end through the real reader.
+            sketch.Constraints.Add(Fix(a1, InventorCurvePointRole.Center));
+            sketch.Constraints.Add(Fix(l0, InventorCurvePointRole.Start));
+            Coincide(sketch, a1, InventorCurvePointRole.End, l0, InventorCurvePointRole.Start);
+            Coincide(sketch, l0, InventorCurvePointRole.End, a1, InventorCurvePointRole.Start);
+            sketch.Constraints.Add(OnCurve(InventorConstraintKind.Horizontal, l0));
+            var radius = new InventorSketchDimension { Kind = InventorDimensionKind.Radius, Expression = "rad" };
+            radius.Curves.Add(a1);
+            sketch.Dimensions.Add(radius);
 
             doc.Sketches.Add(sketch);
             doc.Features.Add(new InventorExtrude

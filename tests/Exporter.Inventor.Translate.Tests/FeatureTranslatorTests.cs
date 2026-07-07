@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 using Oblikovati.Exporter.Inventor.Fixtures;
+using Oblikovati.Exporter.Inventor.Model;
 using Oblikovati.Exporter.Inventor.Recipe;
 using Oblikovati.Exporter.Inventor.Translate;
 using Xunit;

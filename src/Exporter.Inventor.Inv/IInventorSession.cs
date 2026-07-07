@@ -12,9 +12,10 @@ namespace Oblikovati.Exporter.Inventor.Inv
     {
         /// <summary>
         /// Reads the active part/assembly into the Inventor-neutral IR. Throws if no document
-        /// is open.
+        /// is open. Entities that cannot be read across (e.g. a constraint whose geometry was
+        /// skipped) are recorded on <paramref name="report"/> rather than dropped silently.
         /// </summary>
-        InventorDocument ExtractActiveDocument();
+        InventorDocument ExtractActiveDocument(ExportReport report);
 
         /// <summary>Directory the exported document(s) should be written next to.</summary>
         string OutputDirectory();

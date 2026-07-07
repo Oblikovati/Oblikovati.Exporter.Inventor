@@ -29,14 +29,16 @@ declare -A EXPECT_VOL=(
     [sweep.opd]=31.42              # π·1²·10 cylinder (circle profile swept along +Z)
     [loft.opd]=31.42               # π·1²·10 cylinder (loft between two coaxial circles)
     [arc-extrude.opd]=31.42        # 10π half-cylinder (half-disc with an arc, extruded)
+    [arc-radius.opd]=31.42         # same 10π half-cylinder, but the arc is sized by a radius dim
 )
 # Curved-surface results read the faceted body, so they get a wider band.
 declare -A EXPECT_TOL=(
     [revolve.opd]=0.02 [filleted-box.opd]=0.02 [holed-box.opd]=0.02 [sweep.opd]=0.02 [loft.opd]=0.02
-    [arc-extrude.opd]=0.02 [offset-holed-box.opd]=0.02
+    [arc-extrude.opd]=0.02 [arc-radius.opd]=0.02 [offset-holed-box.opd]=0.02
 )
 # Goldens validated by the open check only (no DOF assertion): an ellipse cannot be fully
-# constrained — Oblikovati has no ellipse radius dimension to pin its radii (as with arc radii).
+# constrained — Oblikovati has no ellipse radius dimension to pin its radii. (Arc radii, by
+# contrast, DO pin — see arc-radius.opd, asserted DOF 0 below.)
 declare -A OPEN_ONLY=( [ellipse.opd]=1 [elliptical-arc.opd]=1 [constraint-sampler.opd]=1 )
 
 dotnet run --project "$ROOT/tools/GoldenGen" -c Release -- "$OUT"

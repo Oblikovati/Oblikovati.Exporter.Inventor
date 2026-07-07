@@ -141,8 +141,21 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
         public override bool Construction => false;
 
+        // The 2D line geometry mirrors the endpoints; the extractor reads this (not the sketch
+        // points) so it also works for reference lines whose Start/EndSketchPoint are null.
+        public override LineSegment2d Geometry => new FakeLineSegment2d(_start.Geometry, _end.Geometry);
+
         public static FakeSketchLine From(double x0, double y0, double x1, double y1) =>
             new FakeSketchLine(new FakeSketchPoint(x0, y0), new FakeSketchPoint(x1, y1));
+    }
+
+    public sealed class FakeLineSegment2d : LineSegment2d
+    {
+        private readonly Point2d _start;
+        private readonly Point2d _end;
+        public FakeLineSegment2d(Point2d start, Point2d end) { _start = start; _end = end; }
+        public override Point2d StartPoint => _start;
+        public override Point2d EndPoint => _end;
     }
 
     public sealed class FakeSketchCircles : SketchCircles

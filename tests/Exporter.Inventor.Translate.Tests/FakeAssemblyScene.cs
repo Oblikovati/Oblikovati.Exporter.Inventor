@@ -66,12 +66,14 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly string _name;
         private readonly ComponentDefinition _definition;
         private readonly Matrix _transform;
+        private readonly bool _suppressed;
 
-        public FakeComponentOccurrence(string name, _Document referenced, double[] position)
+        public FakeComponentOccurrence(string name, _Document referenced, double[] position, bool suppressed = false)
         {
             _name = name;
             _definition = new FakeComponentDefinition(referenced);
             _transform = new FakeMatrix(position);
+            _suppressed = suppressed;
         }
 
         public override string Name => _name;
@@ -79,6 +81,8 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override ComponentDefinition Definition => _definition;
 
         public override Matrix Transformation => _transform;
+
+        public override bool Suppressed => _suppressed;
     }
 
     public sealed class FakeComponentDefinition : ComponentDefinition
