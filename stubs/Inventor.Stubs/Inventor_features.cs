@@ -289,10 +289,17 @@ namespace Inventor
         public virtual System.Collections.IEnumerator GetEnumerator() => throw Stub.Error();
     }
 
-    /// <summary>Stub of one entity in a profile loop; StartSketchPoint is its loop-ordered start.</summary>
+    /// <summary>Stub of one entity in a profile loop; StartSketchPoint is its loop-ordered start.
+    /// Curve is the 2D geometry (a LineSegment2d / Arc2d / … typed object) used to sample curved
+    /// boundaries; OpposedToSketchEntity is set when the entity's own direction runs opposite the
+    /// loop.</summary>
     public class ProfileEntity
     {
         public virtual SketchPoint StartSketchPoint => throw Stub.Error();
+
+        public virtual object Curve => throw Stub.Error();
+
+        public virtual bool OpposedToSketchEntity => throw Stub.Error();
     }
 
     /// <summary>Stub of the work-planes collection (object-indexed, 1-based).</summary>

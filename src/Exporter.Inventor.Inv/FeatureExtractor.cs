@@ -549,10 +549,59 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     Point2d g = start.Geometry;
                     poly.Add(new[] { g.X, g.Y });
                 }
+
+                AppendCurveSamples(entity, poly);
             }
 
             return poly;
         }
+
+        // For a curved boundary (arc/circle/spline/ellipse), append interior points along the
+        // curve in loop order, so a region bounded by curves is approximated well enough that the
+        // interior-seed scanline lands inside it. A straight edge adds nothing (its endpoints
+        // already bound the polygon). Best-effort: an evaluator that rejects sampling leaves the
+        // chord, matching the prior behaviour.
+        private static void AppendCurveSamples(ProfileEntity entity, List<double[]> poly)
+        {
+            try
+            {
+                Curve2dEvaluator? evaluator = Evaluator2d(entity.Curve);
+                if (evaluator == null)
+                {
+                    return;
+                }
+
+                evaluator.GetParamExtents(out double min, out double max);
+                double span = max - min;
+                var pars = new[] { min + span * 0.25, min + span * 0.5, min + span * 0.75 };
+                if (entity.OpposedToSketchEntity)
+                {
+                    System.Array.Reverse(pars); // sketch-entity param runs opposite the loop
+                }
+
+                double[] pts = new double[0];
+                evaluator.GetPointAtParam(ref pars, ref pts);
+                for (int i = 0; i + 1 < pts.Length; i += 2)
+                {
+                    poly.Add(new[] { pts[i], pts[i + 1] });
+                }
+            }
+            catch (System.Exception)
+            {
+                // curve won't sample (COM type-mismatch / bad param) -> keep the chord
+            }
+        }
+
+        // The 2D evaluator of a profile entity's curve, or null for a straight segment (no sampling).
+        private static Curve2dEvaluator? Evaluator2d(object curve) => curve switch
+        {
+            Arc2d arc => arc.Evaluator,
+            Circle2d circle => circle.Evaluator,
+            BSplineCurve2d spline => spline.Evaluator,
+            EllipticalArc2d ellipticalArc => ellipticalArc.Evaluator,
+            EllipseFull2d ellipse => ellipse.Evaluator,
+            _ => null,
+        };
 
         // A point strictly inside `outer` and outside every hole, via a horizontal scanline at the
         // loop's mean Y: even-odd crossings give the interior spans; return the midpoint of the

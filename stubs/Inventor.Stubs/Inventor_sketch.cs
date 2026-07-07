@@ -261,6 +261,46 @@ namespace Inventor
         public virtual double Y => throw Stub.Error();
     }
 
+    /// <summary>Stub of a 2D curve evaluator: sample points along a profile entity's curve to
+    /// densify a curved region boundary. GetPointAtParam takes an array of parameters (in the
+    /// evaluator's own range from GetParamExtents) and returns interleaved x,y coordinates.</summary>
+    public class Curve2dEvaluator
+    {
+        public virtual void GetParamExtents(out double minParam, out double maxParam) => throw Stub.Error();
+
+        public virtual void GetPointAtParam(ref double[] parameters, ref double[] points) => throw Stub.Error();
+    }
+
+    /// <summary>Stub 2D circular arc geometry; Evaluator samples it.</summary>
+    public class Arc2d
+    {
+        public virtual Curve2dEvaluator Evaluator => throw Stub.Error();
+    }
+
+    /// <summary>Stub 2D circle geometry; Evaluator samples it.</summary>
+    public class Circle2d
+    {
+        public virtual Curve2dEvaluator Evaluator => throw Stub.Error();
+    }
+
+    /// <summary>Stub 2D B-spline geometry; Evaluator samples it.</summary>
+    public class BSplineCurve2d
+    {
+        public virtual Curve2dEvaluator Evaluator => throw Stub.Error();
+    }
+
+    /// <summary>Stub 2D elliptical-arc geometry; Evaluator samples it.</summary>
+    public class EllipticalArc2d
+    {
+        public virtual Curve2dEvaluator Evaluator => throw Stub.Error();
+    }
+
+    /// <summary>Stub 2D full-ellipse geometry; Evaluator samples it.</summary>
+    public class EllipseFull2d
+    {
+        public virtual Curve2dEvaluator Evaluator => throw Stub.Error();
+    }
+
     /// <summary>Stub of a transient 3D point (cm).</summary>
     public class Point
     {
