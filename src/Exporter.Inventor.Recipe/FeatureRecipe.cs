@@ -279,6 +279,11 @@ namespace Oblikovati.Exporter.Inventor.Recipe
         [YamlMember(Alias = "direction", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public string? Direction { get; set; }
 
+        // Interior seed point(s) (sketch 2D, cm) selecting the extruded region(s) by containment
+        // rather than by index; the reader's region ordering is not predictable from outside.
+        [YamlMember(Alias = "profilePoints", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public IList<double[]> ProfilePoints { get; } = new List<double[]>();
+
         [YamlMember(Alias = "distance", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public double? Distance { get; set; }
 

@@ -160,6 +160,25 @@ namespace Inventor
 
         /// <summary>The drill centre points of every hole this feature places (any placement type).</summary>
         public virtual ObjectCollection HoleCenterPoints => throw Stub.Error();
+
+        /// <summary>Whether the hole is tapped (threaded); then HoleDiameter is null and the drilled
+        /// bore diameter comes from <see cref="TapInfo"/>.</summary>
+        public virtual bool Tapped => throw Stub.Error();
+
+        /// <summary>Thread data for a tapped hole (a <see cref="HoleTapInfo"/>); null otherwise.</summary>
+        public virtual object TapInfo => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a tapped hole's thread data. The tap-drill/minor diameter is the bore that
+    /// actually removes material; both accessors are untyped (a length Parameter or a cm double).</summary>
+    public class HoleTapInfo
+    {
+        public virtual object TapDrillDiameter => throw Stub.Error();
+
+        public virtual object MinorDiameterMax => throw Stub.Error();
+
+        /// <summary>True for a metric thread (its diameters are millimetres, not inches).</summary>
+        public virtual bool Metric => throw Stub.Error();
     }
 
     /// <summary>Stub of a work point; Point is its model-space 3D position.</summary>
@@ -180,5 +199,26 @@ namespace Inventor
     public class PointHolePlacementDefinition : HolePlacementDefinition
     {
         public virtual object Direction => throw Stub.Error();
+    }
+
+    /// <summary>Sketch-driven placement: holes at a sketch's points. The placement face is derived
+    /// from the centre points' owning sketch (its PlanarEntity).</summary>
+    public class SketchHolePlacementDefinition : HolePlacementDefinition
+    {
+        public virtual ObjectCollection HoleCenterPoints => throw Stub.Error();
+    }
+
+    /// <summary>Linear placement: the hole is dimensioned from edges of a placement Plane
+    /// (a planar Face or WorkPlane).</summary>
+    public class LinearHolePlacementDefinition : HolePlacementDefinition
+    {
+        public virtual object Plane => throw Stub.Error();
+    }
+
+    /// <summary>Concentric placement: the hole is concentric to a circular reference on a placement
+    /// Plane (a planar Face or WorkPlane).</summary>
+    public class ConcentricHolePlacementDefinition : HolePlacementDefinition
+    {
+        public virtual object Plane => throw Stub.Error();
     }
 }

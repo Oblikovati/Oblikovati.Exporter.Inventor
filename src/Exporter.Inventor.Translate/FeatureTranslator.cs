@@ -63,17 +63,24 @@ namespace Oblikovati.Exporter.Inventor.Translate
 
         private static FeatureData TranslateExtrude(InventorExtrude extrude)
         {
+            bool isDistance = extrude.ExtentKind == InventorExtentKind.Distance;
             var payload = new ExtrudeData
             {
                 Sketch = extrude.SketchIndex,
                 Operation = OperationName(extrude.Operation),
-                Extent = "distance",
+                Extent = ExtentName(extrude.ExtentKind),
                 Direction = DirectionName(extrude.Direction),
-                Distance = extrude.Distance,
-                Distance2 = extrude.SecondDistance != 0 ? extrude.SecondDistance : (double?)null,
+                // Through-all / to-next span the material; no distance is emitted for them.
+                Distance = isDistance ? extrude.Distance : (double?)null,
+                Distance2 = isDistance && extrude.SecondDistance != 0 ? extrude.SecondDistance : (double?)null,
                 Taper = extrude.TaperRadians != 0 ? extrude.TaperRadians : (double?)null,
             };
             payload.Profiles.Add(extrude.ProfileIndex);
+            foreach (double[] seed in extrude.ProfileSeeds)
+            {
+                payload.ProfilePoints.Add((double[])seed.Clone());
+            }
+
             return new FeatureData { Kind = "extrude", Name = NameOf(extrude), Extrude = payload };
         }
 
@@ -210,6 +217,13 @@ namespace Oblikovati.Exporter.Inventor.Translate
             InventorOperation.Cut => "cut",
             InventorOperation.Intersect => "intersect",
             _ => "newBody",
+        };
+
+        private static string ExtentName(InventorExtentKind kind) => kind switch
+        {
+            InventorExtentKind.ThroughAll => "through-all",
+            InventorExtentKind.ToNext => "to-next",
+            _ => "distance",
         };
 
         private static string DirectionName(InventorExtentDirection direction) => direction switch

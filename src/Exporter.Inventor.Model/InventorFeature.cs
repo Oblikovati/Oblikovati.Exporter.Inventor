@@ -18,6 +18,15 @@ namespace Oblikovati.Exporter.Inventor.Model
         Symmetric,
     }
 
+    /// <summary>How an extrude terminates. Distance uses <see cref="InventorExtrude.Distance"/>;
+    /// ThroughAll/ToNext span the existing material (the engine resolves the span).</summary>
+    public enum InventorExtentKind
+    {
+        Distance,
+        ThroughAll,
+        ToNext,
+    }
+
     /// <summary>Base of an extracted Inventor feature. The translator dispatches on the concrete type.</summary>
     public abstract class InventorFeature
     {
@@ -38,8 +47,12 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         public InventorOperation Operation { get; set; } = InventorOperation.NewBody;
 
+        /// <summary>How the extrude terminates (distance vs through-all / to-next).</summary>
+        public InventorExtentKind ExtentKind { get; set; } = InventorExtentKind.Distance;
+
         public InventorExtentDirection Direction { get; set; } = InventorExtentDirection.Positive;
 
+        /// <summary>Depth for a <see cref="InventorExtentKind.Distance"/> extent (cm); unused otherwise.</summary>
         public double Distance { get; set; }
 
         /// <summary>Second-direction distance for an asymmetric two-sided extrude (cm).</summary>
@@ -47,6 +60,12 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>Draft/taper angle in radians (0 for a straight extrude).</summary>
         public double TaperRadians { get; set; }
+
+        /// <summary>One interior seed point (sketch 2D, cm) per selected profile region. The reader
+        /// resolves each to the region that contains it, replacing the fragile <see cref="ProfileIndex"/>
+        /// (the reader's region ordering is not predictable). Empty ⇒ fall back to the index.</summary>
+        public System.Collections.Generic.IList<double[]> ProfileSeeds { get; } =
+            new System.Collections.Generic.List<double[]>();
     }
 
     /// <summary>

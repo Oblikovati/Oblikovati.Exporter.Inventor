@@ -319,11 +319,17 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public FakeExtrudeFeature(
             string name, PartFeatureOperationEnum operation, string parentSketchName, double distanceCm,
             PartFeatureExtentDirectionEnum direction = PartFeatureExtentDirectionEnum.kPositiveExtentDirection)
+            : this(name, operation, parentSketchName, new FakeDistanceExtent(distanceCm, direction))
+        {
+        }
+
+        public FakeExtrudeFeature(
+            string name, PartFeatureOperationEnum operation, string parentSketchName, PartFeatureExtent extent)
         {
             _name = name;
             _operation = operation;
             _profile = new FakeProfile(parentSketchName);
-            _definition = new FakeExtrudeDefinition(new FakeDistanceExtent(distanceCm, direction));
+            _definition = new FakeExtrudeDefinition(extent);
         }
 
         public override string Name => _name;
@@ -365,6 +371,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override PartFeatureExtentDirectionEnum Direction => _direction;
     }
 
+    public sealed class FakeThroughAllExtent : ThroughAllExtent
+    {
+        private readonly PartFeatureExtentDirectionEnum _direction;
+        public FakeThroughAllExtent(PartFeatureExtentDirectionEnum direction) => _direction = direction;
+        public override PartFeatureExtentDirectionEnum Direction => _direction;
+    }
+
     public sealed class FakeDistanceParameter : Parameter
     {
         private readonly double _value;
@@ -380,13 +393,47 @@ namespace Oblikovati.Exporter.Inventor.Tests
     public sealed class FakeProfile : Profile
     {
         private readonly PlanarSketch _parent;
+        private readonly IList<ProfilePath> _paths;
 
-        public FakeProfile(string sketchName)
+        public FakeProfile(string sketchName, IList<ProfilePath>? paths = null)
         {
             _parent = new FakeNamedSketch(sketchName);
+            _paths = paths ?? new List<ProfilePath>();
         }
 
         public override PlanarSketch Parent => _parent;
+
+        public override int Count => _paths.Count;
+
+        public override System.Collections.IEnumerator GetEnumerator() => _paths.GetEnumerator();
+    }
+
+    public sealed class FakeProfilePath : ProfilePath
+    {
+        private readonly IList<ProfileEntity> _entities;
+
+        public FakeProfilePath(bool addsMaterial, IList<ProfileEntity> entities)
+        {
+            AddsMaterialValue = addsMaterial;
+            _entities = entities;
+        }
+
+        public bool AddsMaterialValue { get; }
+
+        public override bool AddsMaterial => AddsMaterialValue;
+
+        public override int Count => _entities.Count;
+
+        public override System.Collections.IEnumerator GetEnumerator() => _entities.GetEnumerator();
+    }
+
+    public sealed class FakeProfileEntity : ProfileEntity
+    {
+        private readonly SketchPoint _start;
+
+        public FakeProfileEntity(double x, double y) => _start = new FakeSketchPoint(x, y);
+
+        public override SketchPoint StartSketchPoint => _start;
     }
 
     /// <summary>A minimal PlanarSketch fake exposing only the Name the extractor reads from a profile.</summary>

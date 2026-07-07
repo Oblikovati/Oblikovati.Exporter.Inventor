@@ -49,6 +49,15 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override object EntityTwo => _b;
     }
 
+    public sealed class FakePerpendicularConstraint : PerpendicularConstraint
+    {
+        private readonly object _a;
+        private readonly object _b;
+        public FakePerpendicularConstraint(object a, object b) { _a = a; _b = b; }
+        public override object EntityOne => _a;
+        public override object EntityTwo => _b;
+    }
+
     public sealed class FakeCollinearConstraint : CollinearConstraint
     {
         private readonly object _a;

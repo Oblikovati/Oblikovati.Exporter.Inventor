@@ -249,6 +249,12 @@ namespace Inventor
         public virtual PartFeatureExtentDirectionEnum Direction => throw Stub.Error();
     }
 
+    /// <summary>Stub of a through-all extent: spans all existing material in a direction.</summary>
+    public class ThroughAllExtent : PartFeatureExtent
+    {
+        public virtual PartFeatureExtentDirectionEnum Direction => throw Stub.Error();
+    }
+
     /// <summary>
     /// Stub of a non-user parameter (e.g. a feature's distance). Distinct COM interface from
     /// UserParameter. <c>_Value</c> is the evaluated numeric value in database units (cm).
@@ -261,10 +267,39 @@ namespace Inventor
         public virtual string Expression => throw Stub.Error();
     }
 
-    /// <summary>Stub of one sketch profile; its Parent is the sketch it was built from.</summary>
-    public class Profile
+    /// <summary>Stub of one sketch profile; its Parent is the sketch it was built from. Enumerates
+    /// its <see cref="ProfilePath"/> loops (the selected region outers and their holes).</summary>
+    public class Profile : System.Collections.IEnumerable
     {
         public virtual PlanarSketch Parent => throw Stub.Error();
+
+        public virtual int Count => throw Stub.Error();
+
+        public virtual System.Collections.IEnumerator GetEnumerator() => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one loop of a profile: <see cref="AddsMaterial"/> true is a region outer,
+    /// false is a hole. Enumerates its <see cref="ProfileEntity"/> boundary segments.</summary>
+    public class ProfilePath : System.Collections.IEnumerable
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual bool AddsMaterial => throw Stub.Error();
+
+        public virtual System.Collections.IEnumerator GetEnumerator() => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one entity in a profile loop; StartSketchPoint is its loop-ordered start.
+    /// Curve is the 2D geometry (a LineSegment2d / Arc2d / … typed object) used to sample curved
+    /// boundaries; OpposedToSketchEntity is set when the entity's own direction runs opposite the
+    /// loop.</summary>
+    public class ProfileEntity
+    {
+        public virtual SketchPoint StartSketchPoint => throw Stub.Error();
+
+        public virtual object Curve => throw Stub.Error();
+
+        public virtual bool OpposedToSketchEntity => throw Stub.Error();
     }
 
     /// <summary>Stub of the work-planes collection (object-indexed, 1-based).</summary>

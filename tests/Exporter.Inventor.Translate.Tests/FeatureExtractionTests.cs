@@ -42,6 +42,26 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
 
         [Fact]
+        public void Extracts_a_through_all_cut_extrude()
+        {
+            // Regression: through-all cuts were dropped (only DistanceExtent was read), so
+            // subtractive material was never removed and recomputed volumes ballooned.
+            var extrudes = new List<ExtrudeFeature>
+            {
+                new FakeExtrudeFeature(
+                    "Cut1", PartFeatureOperationEnum.kCutOperation, "Square",
+                    new FakeThroughAllExtent(PartFeatureExtentDirectionEnum.kNegativeExtentDirection)),
+            };
+
+            InventorDocument ir = Extract(extrudes, new List<WorkPlane>());
+
+            InventorExtrude extrude = Assert.IsType<InventorExtrude>(Assert.Single(ir.Features));
+            Assert.Equal(InventorOperation.Cut, extrude.Operation);
+            Assert.Equal(InventorExtentKind.ThroughAll, extrude.ExtentKind);
+            Assert.Equal(InventorExtentDirection.Negative, extrude.Direction);
+        }
+
+        [Fact]
         public void Extracts_a_user_work_plane_and_skips_the_default_origin_planes()
         {
             var planes = new List<WorkPlane>
