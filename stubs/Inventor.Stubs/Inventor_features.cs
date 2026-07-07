@@ -173,6 +173,10 @@ namespace Inventor
         public virtual object Geometry => throw Stub.Error();
 
         public virtual Vertices Vertices => throw Stub.Error();
+
+        /// <summary>True when the face's normal runs opposite its surface parameterisation; used to
+        /// recover the outward normal from the plane's own (direction-ambiguous) normal.</summary>
+        public virtual bool IsParamReversed => throw Stub.Error();
     }
 
     /// <summary>Stub of the revolve-features collection (object-indexed, 1-based).</summary>

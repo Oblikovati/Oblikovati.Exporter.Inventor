@@ -355,10 +355,20 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 z += p[2];
             }
 
+            // The reader binds a descriptor face by its OUTWARD normal; the plane's own normal
+            // points either way, so flip it when the face runs opposite its surface (IsParamReversed).
+            // Without this, a placement face whose plane normal is inward (e.g. a hole's start face)
+            // matches the wrong end face and the bore never binds.
+            double[] normal = V(plane.Normal);
+            if (face.IsParamReversed)
+            {
+                normal = new[] { -normal[0], -normal[1], -normal[2] };
+            }
+
             return new InventorFaceDescriptor
             {
                 Centroid = n == 0 ? new double[] { 0, 0, 0 } : new[] { x / n, y / n, z / n },
-                Normal = V(plane.Normal),
+                Normal = normal,
             };
         }
 
