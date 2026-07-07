@@ -45,6 +45,10 @@ namespace Inventor
 
         /// <summary>The plane the sketch lives on (its normal completes the frame).</summary>
         public virtual Plane PlanarEntityGeometry => throw Stub.Error();
+
+        /// <summary>The entity the sketch is built on: a body Face (when sketched on a face) or a
+        /// WorkPlane. Used to resolve a sketch-placed hole's placement face.</summary>
+        public virtual object PlanarEntity => throw Stub.Error();
     }
 
     /// <summary>Stub of the sketch-lines collection (int-indexed, 1-based).</summary>
@@ -243,6 +247,10 @@ namespace Inventor
 
         /// <summary>The point's model-space 3D position (used to read a hole's drill centre).</summary>
         public virtual Point Geometry3d => throw Stub.Error();
+
+        /// <summary>The sketch this point belongs to (the real API types it as the Sketch base;
+        /// object here so the adapter's `is PlanarSketch` downcast compiles against both).</summary>
+        public virtual object Parent => throw Stub.Error();
     }
 
     /// <summary>Stub of a transient 2D point (cm).</summary>

@@ -74,10 +74,19 @@ namespace Oblikovati.Exporter.Inventor.Inv
         private static void AddHoles(InventorDocument ir, HoleFeature h, InventorFaceDescriptor placement)
         {
             List<double[]> centers = HoleCenters(h.HoleCenterPoints);
-            bool through = h.ExtentType == PartFeatureExtentEnum.kThroughAllExtent;
+            // Treat a non-distance extent with no positive depth as through-all: to-face/to-next
+            // bores otherwise read Depth 0 and remove nothing.
+            bool through = h.ExtentType == PartFeatureExtentEnum.kThroughAllExtent
+                || (h.ExtentType != PartFeatureExtentEnum.kDistanceExtent && h.Depth <= 0);
             if (centers.Count == 0)
             {
                 centers.Add(null!); // no resolvable centre -> one hole at the face centroid
+            }
+
+            double? diameterCm = BoreDiameterCm(h);
+            if (diameterCm == null || diameterCm.Value <= 0)
+            {
+                return; // can't size the bore (e.g. an unresolved tapped hole) -> skip, don't crash
             }
 
             foreach (double[] center in centers)
@@ -86,13 +95,42 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 {
                     Name = h.Name,
                     PlacementFace = placement,
-                    DiameterCm = h.HoleDiameter._Value,
+                    DiameterCm = diameterCm.Value,
                     DepthCm = h.Depth,
                     ThroughAll = through,
                     Center = center,
                 });
             }
         }
+
+        // The bore diameter that removes material (cm). A drilled/clearance hole exposes
+        // HoleDiameter; a TAPPED hole leaves it null and the drilled bore is the tap-drill (minor)
+        // diameter carried on TapInfo. Returns null when no diameter can be resolved.
+        private static double? BoreDiameterCm(HoleFeature h)
+        {
+            Parameter drill = h.HoleDiameter;
+            if (drill != null)
+            {
+                return drill._Value; // drilled/clearance: a length Parameter, already in cm
+            }
+
+            if (h.Tapped && h.TapInfo is HoleTapInfo tap)
+            {
+                return TapLengthCm(tap.TapDrillDiameter ?? tap.MinorDiameterMax, tap.Metric);
+            }
+
+            return null;
+        }
+
+        // A tapped hole's TapInfo dimensions come back either as a length Parameter (cm) or, more
+        // often, as a bare double in the THREAD standard's unit (millimetres for a metric thread,
+        // inches otherwise) — not database cm. Convert accordingly.
+        private static double? TapLengthCm(object? value, bool metric) => value switch
+        {
+            Parameter p => p._Value,
+            double d => metric ? d / 10.0 : d * 2.54,
+            _ => (double?)null,
+        };
 
         // The 3D model-space centres of a hole feature's centre points (any placement type).
         private static List<double[]> HoleCenters(ObjectCollection points)
@@ -126,12 +164,33 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
         }
 
-        // The planar face a hole drills into (a point placement's Direction entity).
+        // The planar body face a hole drills into. Inventor exposes the face differently per
+        // placement kind; only PointHolePlacement was read before, so sketch/linear/concentric
+        // holes (the common cases on real parts) were dropped and their material never removed.
+        // A placement whose entity is a WorkPlane (not a body Face) is skipped — the descriptor
+        // needs a real face to bind to.
         private static InventorFaceDescriptor? PlacementFace(HolePlacementDefinition placement)
         {
-            if (placement is PointHolePlacementDefinition point && point.Direction is Face face)
+            object? entity = placement switch
             {
-                return FaceDescriptor(face);
+                PointHolePlacementDefinition point => point.Direction,
+                LinearHolePlacementDefinition linear => linear.Plane,
+                ConcentricHolePlacementDefinition concentric => concentric.Plane,
+                SketchHolePlacementDefinition sketch => SketchPlacementPlane(sketch),
+                _ => null,
+            };
+
+            return entity is Face face ? FaceDescriptor(face) : null;
+        }
+
+        // A sketch-placed hole exposes only its centre points; the placement plane is the entity
+        // the centre points' sketch is built on (a body Face when the sketch is on a face).
+        private static object? SketchPlacementPlane(SketchHolePlacementDefinition placement)
+        {
+            ObjectCollection points = placement.HoleCenterPoints;
+            if (points.Count >= 1 && points[1] is SketchPoint point && point.Parent is PlanarSketch sketch)
+            {
+                return sketch.PlanarEntity;
             }
 
             return null;
