@@ -17,8 +17,8 @@ namespace Oblikovati.Exporter.Inventor.Entry
     {
         public static string Run(IInventorSession session, IDocumentSink sink)
         {
-            InventorDocument doc = session.ExtractActiveDocument();
             var report = new ExportReport();
+            InventorDocument doc = session.ExtractActiveDocument(report);
             var writer = new RecipeYamlWriter();
             IReadOnlyList<TranslatedDocument> files =
                 new DocumentExporter(new DocumentTranslator()).Export(doc, report);

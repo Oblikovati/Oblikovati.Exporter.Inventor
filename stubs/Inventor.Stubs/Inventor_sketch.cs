@@ -66,6 +66,18 @@ namespace Inventor
 
         /// <summary>The line's model-space geometry (used to read a sweep path segment in 3D).</summary>
         public virtual LineSegment Geometry3d => throw Stub.Error();
+
+        /// <summary>The line's 2D sketch-space geometry; readable even for a projected reference
+        /// line whose Start/EndSketchPoint are null (used to inject a revolve centerline).</summary>
+        public virtual LineSegment2d Geometry => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a 2D line segment (SketchLine.Geometry), with its 2D endpoints.</summary>
+    public class LineSegment2d
+    {
+        public virtual Point2d StartPoint => throw Stub.Error();
+
+        public virtual Point2d EndPoint => throw Stub.Error();
     }
 
     /// <summary>Stub of the sketch-circles collection (int-indexed, 1-based).</summary>

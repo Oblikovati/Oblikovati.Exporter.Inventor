@@ -34,6 +34,9 @@ namespace Inventor
         public virtual ComponentDefinition Definition => throw Stub.Error();
 
         public virtual Matrix Transformation => throw Stub.Error();
+
+        /// <summary>Whether the occurrence is suppressed (no resolvable Definition; skipped).</summary>
+        public virtual bool Suppressed => throw Stub.Error();
     }
 
     /// <summary>Stub of a component definition; its Document is the referenced part/assembly.</summary>

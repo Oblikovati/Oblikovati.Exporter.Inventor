@@ -21,9 +21,31 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= occurrences.Count; i++)
             {
                 ComponentOccurrence occurrence = occurrences[i];
+                // A suppressed occurrence carries no resolvable Definition (its Definition/Document
+                // getter raises E_FAIL) and contributes no geometry, so skip it rather than aborting.
+                if (occurrence.Suppressed)
+                {
+                    continue;
+                }
+
+                InventorOccurrence? entry = TryReadOccurrence(occurrence, resolve);
+                if (entry != null)
+                {
+                    ir.Occurrences.Add(entry);
+                }
+            }
+        }
+
+        // Reads one occurrence, tolerating an unresolved reference whose Definition/Document raises
+        // E_FAIL (missing file, broken link): returns null so the caller skips just that component.
+        private static InventorOccurrence? TryReadOccurrence(
+            ComponentOccurrence occurrence, Func<_Document, InventorDocument> resolve)
+        {
+            try
+            {
                 var child = (_Document)occurrence.Definition.Document;
                 Matrix m = occurrence.Transformation;
-                ir.Occurrences.Add(new InventorOccurrence
+                return new InventorOccurrence
                 {
                     Name = occurrence.Name,
                     Component = resolve(child),
@@ -34,7 +56,11 @@ namespace Oblikovati.Exporter.Inventor.Inv
                         m.get_Cell(2, 1), m.get_Cell(2, 2), m.get_Cell(2, 3),
                         m.get_Cell(3, 1), m.get_Cell(3, 2), m.get_Cell(3, 3),
                     },
-                });
+                };
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                return null;
             }
         }
     }

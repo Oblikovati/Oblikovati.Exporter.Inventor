@@ -23,15 +23,22 @@ namespace Oblikovati.Exporter.Inventor.Inv
             _application = application;
         }
 
-        public InventorDocument ExtractActiveDocument() =>
-            ExtractDocument(ActiveDocument(), new Dictionary<string, InventorDocument>());
+        public InventorDocument ExtractActiveDocument(ExportReport report) =>
+            ExtractDocument(ActiveDocument(), new Dictionary<string, InventorDocument>(), report);
+
+        /// <summary>
+        /// Convenience overload for callers (mainly tests) that don't inspect the report; drops
+        /// into a throwaway one so the extraction runs the same way.
+        /// </summary>
+        public InventorDocument ExtractActiveDocument() => ExtractActiveDocument(new ExportReport());
 
         /// <summary>
         /// Extracts one document (recursing into an assembly's components). <paramref name="cache"/>
         /// dedups by full file name so a component shared by several occurrences yields one IR
         /// document (one exported file); registering before recursing also guards against cycles.
         /// </summary>
-        private InventorDocument ExtractDocument(_Document doc, IDictionary<string, InventorDocument> cache)
+        private InventorDocument ExtractDocument(
+            _Document doc, IDictionary<string, InventorDocument> cache, ExportReport report)
         {
             string key = doc.FullFileName;
             if (!string.IsNullOrEmpty(key) && cache.TryGetValue(key, out InventorDocument existing))
@@ -52,33 +59,63 @@ namespace Oblikovati.Exporter.Inventor.Inv
             ExtractUnits(doc, ir);
             if (ir.Kind == InventorDocumentKind.Part)
             {
-                ExtractPart((PartDocument)doc, ir);
+                ExtractPart((PartDocument)doc, ir, report);
             }
             else
             {
                 ComponentExtractor.Extract(
-                    ((AssemblyDocument)doc).ComponentDefinition, ir, child => ExtractDocument(child, cache));
+                    ((AssemblyDocument)doc).ComponentDefinition, ir,
+                    child => ExtractDocument(child, cache, report));
             }
 
             return ir;
         }
 
-        private static void ExtractPart(PartDocument part, InventorDocument ir)
+        private static void ExtractPart(PartDocument part, InventorDocument ir, ExportReport report)
         {
             ExtractUserParameters(part, ir);
-            SketchExtractor.Extract(part, ir);
+            SketchExtractor.Extract(part, ir, report);
             FeatureExtractor.Extract(part, ir);
         }
 
         /// <summary>
-        /// Copies the document's length/angle units into the IR as expression abbreviations
-        /// (e.g. "mm", "deg") — the form the Oblikovati recipe stores.
+        /// Copies the document's length/angle units into the IR as the abbreviations the
+        /// Oblikovati recipe stores (e.g. "mm", "deg").
         /// </summary>
         private static void ExtractUnits(_Document doc, InventorDocument ir)
         {
             UnitsOfMeasure uom = doc.UnitsOfMeasure;
-            ir.LengthUnit = uom.GetStringFromType(uom.LengthUnits);
-            ir.AngleUnit = uom.GetStringFromType(uom.AngleUnits);
+            ir.LengthUnit = LengthAbbreviation(uom.LengthUnits);
+            ir.AngleUnit = AngleAbbreviation(uom.AngleUnits);
+        }
+
+        // Inventor's GetStringFromType returns full unit *names* ("centimeter", "degree"), but the
+        // Oblikovati reader only registers abbreviations (cm, mm, m, in, ft, rad, deg) and rejects
+        // anything else — so a live-exported part fails to load. Map from the stable UnitsTypeEnum
+        // instead, which is locale-independent and never a display string. Values in the recipe are
+        // always stored in database units (cm / radian), so the unit token is a display preference
+        // only; an unrecognised Inventor unit falls back to the database unit, keeping geometry exact.
+        private static string LengthAbbreviation(UnitsTypeEnum units)
+        {
+            switch (units)
+            {
+                case UnitsTypeEnum.kMillimeterLengthUnits: return "mm";
+                case UnitsTypeEnum.kCentimeterLengthUnits: return "cm";
+                case UnitsTypeEnum.kMeterLengthUnits: return "m";
+                case UnitsTypeEnum.kInchLengthUnits: return "in";
+                case UnitsTypeEnum.kFootLengthUnits: return "ft";
+                default: return "cm";
+            }
+        }
+
+        private static string AngleAbbreviation(UnitsTypeEnum units)
+        {
+            switch (units)
+            {
+                case UnitsTypeEnum.kRadianAngleUnits: return "rad";
+                case UnitsTypeEnum.kDegreeAngleUnits: return "deg";
+                default: return "deg";
+            }
         }
 
         /// <summary>
@@ -98,7 +135,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 ir.Parameters.Add(new InventorParameter
                 {
                     Name = p.Name,
-                    Expression = p.Expression,
+                    Expression = InventorExpression.Canonical(p.Expression),
                     Unit = p.get_Units(),
                 });
             }

@@ -49,16 +49,19 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
         public override UnitsTypeEnum AngleUnits => _angle;
 
+        // Mirrors the genuine Inventor API: GetStringFromType returns the full unit *name*
+        // ("centimeter", "degree"), NOT the abbreviation. The adapter must not pass this
+        // straight through — the Oblikovati reader only accepts abbreviations (cm, deg…).
         public override string GetStringFromType(UnitsTypeEnum unitsType) => unitsType switch
         {
-            UnitsTypeEnum.kMillimeterLengthUnits => "mm",
-            UnitsTypeEnum.kCentimeterLengthUnits => "cm",
-            UnitsTypeEnum.kMeterLengthUnits => "m",
-            UnitsTypeEnum.kInchLengthUnits => "in",
-            UnitsTypeEnum.kFootLengthUnits => "ft",
-            UnitsTypeEnum.kRadianAngleUnits => "rad",
-            UnitsTypeEnum.kDegreeAngleUnits => "deg",
-            _ => "mm",
+            UnitsTypeEnum.kMillimeterLengthUnits => "millimeter",
+            UnitsTypeEnum.kCentimeterLengthUnits => "centimeter",
+            UnitsTypeEnum.kMeterLengthUnits => "meter",
+            UnitsTypeEnum.kInchLengthUnits => "inch",
+            UnitsTypeEnum.kFootLengthUnits => "foot",
+            UnitsTypeEnum.kRadianAngleUnits => "radian",
+            UnitsTypeEnum.kDegreeAngleUnits => "degree",
+            _ => "millimeter",
         };
     }
 

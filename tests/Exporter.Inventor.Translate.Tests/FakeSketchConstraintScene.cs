@@ -126,11 +126,11 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly object _a;
         private readonly object _b;
         private readonly Parameter _parameter;
-        public FakeTwoLineAngleDimConstraint(object a, object b, string expression)
+        public FakeTwoLineAngleDimConstraint(object a, object b, string expression, double value = 0)
         {
             _a = a;
             _b = b;
-            _parameter = new FakeExpressionParameter(expression);
+            _parameter = new FakeExpressionParameter(expression, value);
         }
         public override object LineOne => _a;
         public override object LineTwo => _b;
@@ -142,11 +142,11 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly SketchPoint _a;
         private readonly SketchPoint _b;
         private readonly Parameter _parameter;
-        public FakeTwoPointDistanceDimConstraint(SketchPoint a, SketchPoint b, string expression)
+        public FakeTwoPointDistanceDimConstraint(SketchPoint a, SketchPoint b, string expression, double value = 0)
         {
             _a = a;
             _b = b;
-            _parameter = new FakeExpressionParameter(expression);
+            _parameter = new FakeExpressionParameter(expression, value);
         }
         public override SketchPoint PointOne => _a;
         public override SketchPoint PointTwo => _b;
@@ -157,20 +157,30 @@ namespace Oblikovati.Exporter.Inventor.Tests
     {
         private readonly object _entity;
         private readonly Parameter _parameter;
-        public FakeDiameterDimConstraint(object entity, string expression)
+        public FakeDiameterDimConstraint(object entity, string expression, double value = 0)
         {
             _entity = entity;
-            _parameter = new FakeExpressionParameter(expression);
+            _parameter = new FakeExpressionParameter(expression, value);
         }
         public override object Entity => _entity;
         public override Parameter Parameter => _parameter;
     }
 
-    /// <summary>A parameter that carries an expression (the dimension's driving expression).</summary>
+    /// <summary>
+    /// A parameter that carries an expression (the dimension's driving expression) and its
+    /// evaluated model value in database units (cm/rad) — the exporter reads both, collapsing an
+    /// expression that references a foreign model parameter to its value.
+    /// </summary>
     public sealed class FakeExpressionParameter : Parameter
     {
         private readonly string _expression;
-        public FakeExpressionParameter(string expression) => _expression = expression;
+        private readonly double _value;
+        public FakeExpressionParameter(string expression, double value = 0)
+        {
+            _expression = expression;
+            _value = value;
+        }
         public override string Expression => _expression;
+        public override double _Value => _value;
     }
 }

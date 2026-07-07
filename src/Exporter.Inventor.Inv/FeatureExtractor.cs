@@ -105,11 +105,26 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     LineSegment seg = line.Geometry3d;
                     return new List<double[]> { P3(seg.StartPoint), P3(seg.EndPoint) };
                 case SketchArc arc:
-                    return Tessellate(arc.Geometry3d.Evaluator);
+                    return TryTessellate(arc.Geometry3d.Evaluator);
                 case SketchSpline spline:
-                    return Tessellate(spline.Geometry3d.Evaluator);
+                    return TryTessellate(spline.Geometry3d.Evaluator);
                 default:
                     return null;
+            }
+        }
+
+        // Tessellates, tolerating an evaluator that rejects GetStrokes with a COM type-mismatch
+        // (seen on some helical/spline paths); returns null so the caller skips the whole sweep,
+        // matching the existing "unknown path-segment" behaviour rather than aborting the export.
+        private static List<double[]>? TryTessellate(CurveEvaluator evaluator)
+        {
+            try
+            {
+                return Tessellate(evaluator);
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                return null;
             }
         }
 
@@ -189,17 +204,25 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     continue; // unresolved direction or source -> skip rather than guess
                 }
 
+                // A single-direction rectangular pattern leaves the Y parameters (YCount/YSpacing)
+                // null, so read them only when a second direction is actually present.
                 var pattern = new InventorRectangularPattern
                 {
                     Name = p.Name,
                     CountX = (int)p.XCount._Value,
-                    CountY = (int)p.YCount._Value,
+                    CountY = p.YCount != null ? (int)p.YCount._Value : 1,
                     StepX = Scale(xDir, p.XSpacing._Value),
                 };
-                double[]? yDir = ResolveDirection(p.YDirectionEntity, p.NaturalYDirection);
-                if (pattern.CountY > 1 && yDir != null)
+                // Only touch the Y-direction entities for a genuine two-direction pattern: a
+                // single-direction pattern raises E_FAIL just accessing YDirectionEntity /
+                // NaturalYDirection.
+                if (pattern.CountY > 1)
                 {
-                    pattern.StepY = Scale(yDir, p.YSpacing._Value);
+                    double[]? yDir = ResolveDirection(p.YDirectionEntity, p.NaturalYDirection);
+                    if (yDir != null && p.YSpacing != null)
+                    {
+                        pattern.StepY = Scale(yDir, p.YSpacing._Value);
+                    }
                 }
 
                 AddSources(pattern, sources);
@@ -371,6 +394,14 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
         private static void InjectCenterline(InventorSketch sketch, SketchLine axis)
         {
+            // Read the axis from its 2D line geometry, not its sketch points: a revolve axis is
+            // often a projected reference line whose Start/EndSketchPoint are null.
+            LineSegment2d? geometry = axis?.Geometry;
+            if (geometry == null)
+            {
+                return;
+            }
+
             long nextId = 1;
             foreach (InventorCurve c in sketch.Curves)
             {
@@ -384,8 +415,8 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 Id = nextId,
                 Kind = InventorCurveKind.Line,
-                Start = P2(axis.StartSketchPoint.Geometry),
-                End = P2(axis.EndSketchPoint.Geometry),
+                Start = P2(geometry.StartPoint),
+                End = P2(geometry.EndPoint),
                 Centerline = true,
             });
         }

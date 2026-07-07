@@ -17,6 +17,11 @@ namespace Oblikovati.Exporter.Inventor.Tests
     {
         private static InventorSketch Extract(
             IList<SketchLine> lines, IList<SketchCircle> circles,
+            IList<GeometricConstraint> constraints, IList<DimensionConstraint> dimensions) =>
+            ExtractWithReport(lines, circles, constraints, dimensions).Sketch;
+
+        private static (InventorSketch Sketch, ExportReport Report) ExtractWithReport(
+            IList<SketchLine> lines, IList<SketchCircle> circles,
             IList<GeometricConstraint> constraints, IList<DimensionConstraint> dimensions)
         {
             var sketch = new FakePlanarSketch(
@@ -25,7 +30,9 @@ namespace Oblikovati.Exporter.Inventor.Tests
             var doc = new FakePartDocument(
                 "p.ipt", @"C:\work\p.ipt", new FakeUnitsOfMeasure(), new List<UserParameter>(),
                 new List<PlanarSketch> { sketch });
-            return new InventorSessionAdapter(new FakeInventorApplication(doc)).ExtractActiveDocument().Sketches[0];
+            var report = new ExportReport();
+            InventorDocument ir = new InventorSessionAdapter(new FakeInventorApplication(doc)).ExtractActiveDocument(report);
+            return (ir.Sketches[0], report);
         }
 
         [Fact]
@@ -117,6 +124,38 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
             InventorSketchConstraint ground = Assert.Single(sk.Constraints, c => c.Kind == InventorConstraintKind.Ground);
             Assert.Equal(2, ground.Points.Count); // the line's two endpoints
+        }
+
+        [Fact]
+        public void Reads_a_ground_constraint_on_a_single_sketch_point()
+        {
+            SketchLine line = FakeSketchLine.From(10, 1, 14, 1);
+            // Ground just the line's start point (pinning an origin corner is common in Inventor).
+            var constraints = new List<GeometricConstraint> { new FakeGroundConstraint(line.StartSketchPoint) };
+
+            InventorSketch sk = Extract(
+                new List<SketchLine> { line }, new List<SketchCircle>(), constraints, new List<DimensionConstraint>());
+
+            InventorSketchConstraint ground = Assert.Single(sk.Constraints, c => c.Kind == InventorConstraintKind.Ground);
+            InventorPointRef point = Assert.Single(ground.Points); // just the grounded point, not the whole line
+            Assert.Equal(InventorCurvePointRole.Start, point.Role);
+        }
+
+        [Fact]
+        public void Records_a_constraint_whose_entity_was_not_extracted_on_the_report()
+        {
+            SketchLine line = FakeSketchLine.From(10, 1, 14, 1);
+            // The ground references an entity that is not part of any extracted curve/point, so it
+            // cannot be carried across. It must be reported, not silently dropped.
+            var constraints = new List<GeometricConstraint> { new FakeGroundConstraint(new object()) };
+
+            (InventorSketch sk, ExportReport report) = ExtractWithReport(
+                new List<SketchLine> { line }, new List<SketchCircle>(), constraints, new List<DimensionConstraint>());
+
+            Assert.DoesNotContain(sk.Constraints, c => c.Kind == InventorConstraintKind.Ground);
+            string skipped = Assert.Single(report.Unsupported);
+            Assert.Contains("ground", skipped);
+            Assert.Contains("'S'", skipped); // names the sketch it came from
         }
 
         [Fact]

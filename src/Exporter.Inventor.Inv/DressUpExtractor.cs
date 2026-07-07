@@ -177,7 +177,13 @@ namespace Oblikovati.Exporter.Inventor.Inv
                         haveRadius = true;
                     }
 
-                    AddEdges(fillet.Edges, set.Edges);
+                    // Some constant-radius edge sets (e.g. face/loop-defined fillets) reject
+                    // get_Edges with E_FAIL; skip that set rather than aborting the whole export.
+                    EdgeCollection? edges = TryGetEdges(set);
+                    if (edges != null)
+                    {
+                        AddEdges(fillet.Edges, edges);
+                    }
                 }
 
                 if (fillet.Edges.Count > 0)
@@ -225,13 +231,43 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
         }
 
+        // Reads an edge set's Edges, tolerating the E_FAIL that Inventor raises for edge sets whose
+        // membership it will not enumerate (returns null so the caller skips just that set).
+        private static EdgeCollection? TryGetEdges(FilletConstantRadiusEdgeSet set)
+        {
+            try
+            {
+                return set.Edges;
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                return null;
+            }
+        }
+
         private static void AddEdges(IList<InventorEdgeDescriptor> target, EdgeCollection edges)
         {
+            if (edges == null)
+            {
+                return; // some chamfer/fillet edge sets expose a null edge collection
+            }
+
             for (int i = 1; i <= edges.Count; i++)
             {
                 var e = (Edge)edges[i];
-                double[] a = P3(e.StartVertex.Point);
-                double[] b = P3(e.StopVertex.Point);
+                // A closed/curved edge (circle, full arc) has no start/stop vertex, so StartVertex
+                // is null. This descriptor is the straight-edge form (midpoint + direction from its
+                // endpoints), so skip a vertex-less edge rather than dereferencing null; curved-edge
+                // dress-ups are a later step.
+                Vertex startVertex = e.StartVertex;
+                Vertex stopVertex = e.StopVertex;
+                if (startVertex == null || stopVertex == null)
+                {
+                    continue;
+                }
+
+                double[] a = P3(startVertex.Point);
+                double[] b = P3(stopVertex.Point);
                 target.Add(new InventorEdgeDescriptor
                 {
                     Midpoint = new[] { (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2 },
