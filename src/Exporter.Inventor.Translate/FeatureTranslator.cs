@@ -76,6 +76,11 @@ namespace Oblikovati.Exporter.Inventor.Translate
                 Taper = extrude.TaperRadians != 0 ? extrude.TaperRadians : (double?)null,
             };
             payload.Profiles.Add(extrude.ProfileIndex);
+            foreach (double[] seed in extrude.ProfileSeeds)
+            {
+                payload.ProfilePoints.Add((double[])seed.Clone());
+            }
+
             return new FeatureData { Kind = "extrude", Name = NameOf(extrude), Extrude = payload };
         }
 

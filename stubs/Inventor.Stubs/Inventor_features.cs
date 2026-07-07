@@ -267,10 +267,32 @@ namespace Inventor
         public virtual string Expression => throw Stub.Error();
     }
 
-    /// <summary>Stub of one sketch profile; its Parent is the sketch it was built from.</summary>
-    public class Profile
+    /// <summary>Stub of one sketch profile; its Parent is the sketch it was built from. Enumerates
+    /// its <see cref="ProfilePath"/> loops (the selected region outers and their holes).</summary>
+    public class Profile : System.Collections.IEnumerable
     {
         public virtual PlanarSketch Parent => throw Stub.Error();
+
+        public virtual int Count => throw Stub.Error();
+
+        public virtual System.Collections.IEnumerator GetEnumerator() => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one loop of a profile: <see cref="AddsMaterial"/> true is a region outer,
+    /// false is a hole. Enumerates its <see cref="ProfileEntity"/> boundary segments.</summary>
+    public class ProfilePath : System.Collections.IEnumerable
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual bool AddsMaterial => throw Stub.Error();
+
+        public virtual System.Collections.IEnumerator GetEnumerator() => throw Stub.Error();
+    }
+
+    /// <summary>Stub of one entity in a profile loop; StartSketchPoint is its loop-ordered start.</summary>
+    public class ProfileEntity
+    {
+        public virtual SketchPoint StartSketchPoint => throw Stub.Error();
     }
 
     /// <summary>Stub of the work-planes collection (object-indexed, 1-based).</summary>

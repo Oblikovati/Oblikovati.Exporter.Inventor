@@ -490,8 +490,127 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 feature.SketchIndex = sketchIndex;
                 feature.ProfileIndex = 0;
                 feature.Operation = ToOperation(ext.Operation);
+                foreach (double[] seed in ProfileSeeds(ext.Profile))
+                {
+                    feature.ProfileSeeds.Add(seed);
+                }
+
                 ir.Features.Add(feature);
             }
+        }
+
+        // One guaranteed-interior seed point (sketch cm) per region the feature's Profile
+        // adds/removes. Inventor records the exact selected region(s) as ProfilePaths:
+        // AddsMaterial=true paths are region outers, AddsMaterial=false paths are their holes. A
+        // seed lets the reader pick the same region without depending on its region-ordering.
+        private static IEnumerable<double[]> ProfileSeeds(Profile profile)
+        {
+            var outers = new List<List<double[]>>();
+            var holes = new List<List<double[]>>();
+            foreach (ProfilePath path in profile)
+            {
+                List<double[]> poly = LoopPolygon(path);
+                if (poly.Count >= 3)
+                {
+                    (path.AddsMaterial ? outers : holes).Add(poly);
+                }
+            }
+
+            foreach (List<double[]> outer in outers)
+            {
+                var owned = new List<List<double[]>>();
+                foreach (List<double[]> h in holes)
+                {
+                    if (h.Count > 0 && PointInPolygon(h[0], outer))
+                    {
+                        owned.Add(h);
+                    }
+                }
+
+                double[]? seed = InteriorPoint(outer, owned);
+                if (seed != null)
+                {
+                    yield return seed;
+                }
+            }
+        }
+
+        // A ProfilePath's loop as a polygon of its entities' start points (sketch cm). Straight
+        // edges are exact; a spline/arc edge is chorded (start-point sample) — adequate because
+        // the interior seed is taken well inside the loop, not on its boundary.
+        private static List<double[]> LoopPolygon(ProfilePath path)
+        {
+            var poly = new List<double[]>();
+            foreach (ProfileEntity entity in path)
+            {
+                SketchPoint start = entity.StartSketchPoint;
+                if (start != null)
+                {
+                    Point2d g = start.Geometry;
+                    poly.Add(new[] { g.X, g.Y });
+                }
+            }
+
+            return poly;
+        }
+
+        // A point strictly inside `outer` and outside every hole, via a horizontal scanline at the
+        // loop's mean Y: even-odd crossings give the interior spans; return the midpoint of the
+        // widest (robust for a concave region whose vertex centroid falls outside it).
+        private static double[]? InteriorPoint(List<double[]> outer, List<List<double[]>> holes)
+        {
+            double y = 0;
+            foreach (double[] p in outer) y += p[1];
+            y /= outer.Count;
+
+            var xs = new List<double>();
+            Crossings(outer, y, xs);
+            foreach (List<double[]> h in holes) Crossings(h, y, xs);
+            xs.Sort();
+
+            double bestMid = 0, bestWidth = -1;
+            for (int i = 0; i + 1 < xs.Count; i += 2)
+            {
+                double w = xs[i + 1] - xs[i];
+                if (w > bestWidth)
+                {
+                    bestWidth = w;
+                    bestMid = (xs[i] + xs[i + 1]) / 2;
+                }
+            }
+
+            return bestWidth > 1e-9 ? new[] { bestMid, y } : null;
+        }
+
+        private static void Crossings(List<double[]> poly, double y, List<double> xs)
+        {
+            int n = poly.Count;
+            for (int i = 0; i < n; i++)
+            {
+                double[] a = poly[i], b = poly[(i + 1) % n];
+                if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y))
+                {
+                    double t = (y - a[1]) / (b[1] - a[1]);
+                    xs.Add(a[0] + t * (b[0] - a[0]));
+                }
+            }
+        }
+
+        private static bool PointInPolygon(double[] q, List<double[]> poly)
+        {
+            bool inside = false;
+            int n = poly.Count;
+            for (int i = 0, j = n - 1; i < n; j = i++)
+            {
+                double[] a = poly[i], b = poly[j];
+                if (((a[1] > q[1]) != (b[1] > q[1])) &&
+                    (q[0] < (b[0] - a[0]) * (q[1] - a[1]) / (b[1] - a[1]) + a[0]))
+                {
+                    inside = !inside;
+                }
+            }
+
+            return inside;
         }
 
         private static int SketchIndexOf(InventorDocument ir, string sketchName)

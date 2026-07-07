@@ -60,6 +60,12 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>Draft/taper angle in radians (0 for a straight extrude).</summary>
         public double TaperRadians { get; set; }
+
+        /// <summary>One interior seed point (sketch 2D, cm) per selected profile region. The reader
+        /// resolves each to the region that contains it, replacing the fragile <see cref="ProfileIndex"/>
+        /// (the reader's region ordering is not predictable). Empty ⇒ fall back to the index.</summary>
+        public System.Collections.Generic.IList<double[]> ProfileSeeds { get; } =
+            new System.Collections.Generic.List<double[]>();
     }
 
     /// <summary>
