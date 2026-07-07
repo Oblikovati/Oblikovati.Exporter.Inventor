@@ -92,6 +92,7 @@ namespace Oblikovati.Exporter.Inventor.Translate
             {
                 Sketch = revolve.SketchIndex,
                 Profile = revolve.ProfileIndex,
+                ProfilePoint = revolve.ProfileSeeds.Count > 0 ? (double[])revolve.ProfileSeeds[0].Clone() : null,
                 Operation = OperationName(revolve.Operation),
                 Angle = revolve.AngleRadians != 0 ? revolve.AngleRadians : (double?)null,
             };

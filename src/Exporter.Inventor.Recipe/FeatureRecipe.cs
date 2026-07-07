@@ -189,6 +189,11 @@ namespace Oblikovati.Exporter.Inventor.Recipe
         [YamlMember(Alias = "profile")]
         public int Profile { get; set; }
 
+        // Interior seed point (sketch 2D, cm) selecting the revolved region by containment; the
+        // reader's region ordering is not predictable from outside.
+        [YamlMember(Alias = "profilePoint", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double[]? ProfilePoint { get; set; }
+
         [YamlMember(Alias = "angle", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public double? Angle { get; set; }
 
