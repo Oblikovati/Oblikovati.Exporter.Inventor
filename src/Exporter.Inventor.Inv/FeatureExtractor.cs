@@ -379,7 +379,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 // Oblikovati revolves about the sketch's own centerline, so add the axis line to
                 // the profile sketch as a centerline (its 2D endpoints come straight from the axis).
                 InjectCenterline(ir.Sketches[sketchIndex], rev._AxisEntity);
-                ir.Features.Add(new InventorRevolve
+                var revolve = new InventorRevolve
                 {
                     Name = rev.Name,
                     SketchIndex = sketchIndex,
@@ -388,7 +388,13 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     AngleRadians = rev.ExtentType == PartFeatureExtentEnum.kAngleExtent
                         ? ((AngleExtent)rev.Extent).Angle._Value
                         : 0, // full sweep
-                });
+                };
+                foreach (double[] seed in ProfileSeeds(rev.Profile))
+                {
+                    revolve.ProfileSeeds.Add(seed);
+                }
+
+                ir.Features.Add(revolve);
             }
         }
 

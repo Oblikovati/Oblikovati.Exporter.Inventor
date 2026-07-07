@@ -83,6 +83,12 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>Swept angle in radians; 0 means a full revolution.</summary>
         public double AngleRadians { get; set; }
+
+        /// <summary>Interior seed point(s) (sketch 2D, cm) selecting the revolved region by
+        /// containment rather than the fragile <see cref="ProfileIndex"/>. The translator emits the
+        /// first; empty ⇒ fall back to the index.</summary>
+        public System.Collections.Generic.IList<double[]> ProfileSeeds { get; } =
+            new System.Collections.Generic.List<double[]>();
     }
 
     /// <summary>
