@@ -18,6 +18,15 @@ namespace Oblikovati.Exporter.Inventor.Model
         Symmetric,
     }
 
+    /// <summary>How an extrude terminates. Distance uses <see cref="InventorExtrude.Distance"/>;
+    /// ThroughAll/ToNext span the existing material (the engine resolves the span).</summary>
+    public enum InventorExtentKind
+    {
+        Distance,
+        ThroughAll,
+        ToNext,
+    }
+
     /// <summary>Base of an extracted Inventor feature. The translator dispatches on the concrete type.</summary>
     public abstract class InventorFeature
     {
@@ -38,8 +47,12 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         public InventorOperation Operation { get; set; } = InventorOperation.NewBody;
 
+        /// <summary>How the extrude terminates (distance vs through-all / to-next).</summary>
+        public InventorExtentKind ExtentKind { get; set; } = InventorExtentKind.Distance;
+
         public InventorExtentDirection Direction { get; set; } = InventorExtentDirection.Positive;
 
+        /// <summary>Depth for a <see cref="InventorExtentKind.Distance"/> extent (cm); unused otherwise.</summary>
         public double Distance { get; set; }
 
         /// <summary>Second-direction distance for an asymmetric two-sided extrude (cm).</summary>

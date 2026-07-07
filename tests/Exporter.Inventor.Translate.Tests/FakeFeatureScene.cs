@@ -319,11 +319,17 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public FakeExtrudeFeature(
             string name, PartFeatureOperationEnum operation, string parentSketchName, double distanceCm,
             PartFeatureExtentDirectionEnum direction = PartFeatureExtentDirectionEnum.kPositiveExtentDirection)
+            : this(name, operation, parentSketchName, new FakeDistanceExtent(distanceCm, direction))
+        {
+        }
+
+        public FakeExtrudeFeature(
+            string name, PartFeatureOperationEnum operation, string parentSketchName, PartFeatureExtent extent)
         {
             _name = name;
             _operation = operation;
             _profile = new FakeProfile(parentSketchName);
-            _definition = new FakeExtrudeDefinition(new FakeDistanceExtent(distanceCm, direction));
+            _definition = new FakeExtrudeDefinition(extent);
         }
 
         public override string Name => _name;
@@ -362,6 +368,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
         public override Parameter Distance => _distance;
 
+        public override PartFeatureExtentDirectionEnum Direction => _direction;
+    }
+
+    public sealed class FakeThroughAllExtent : ThroughAllExtent
+    {
+        private readonly PartFeatureExtentDirectionEnum _direction;
+        public FakeThroughAllExtent(PartFeatureExtentDirectionEnum direction) => _direction = direction;
         public override PartFeatureExtentDirectionEnum Direction => _direction;
     }
 

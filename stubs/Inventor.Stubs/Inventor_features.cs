@@ -249,6 +249,12 @@ namespace Inventor
         public virtual PartFeatureExtentDirectionEnum Direction => throw Stub.Error();
     }
 
+    /// <summary>Stub of a through-all extent: spans all existing material in a direction.</summary>
+    public class ThroughAllExtent : PartFeatureExtent
+    {
+        public virtual PartFeatureExtentDirectionEnum Direction => throw Stub.Error();
+    }
+
     /// <summary>
     /// Stub of a non-user parameter (e.g. a feature's distance). Distinct COM interface from
     /// UserParameter. <c>_Value</c> is the evaluated numeric value in database units (cm).

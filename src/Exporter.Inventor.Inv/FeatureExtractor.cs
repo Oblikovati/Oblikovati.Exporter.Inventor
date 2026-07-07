@@ -451,10 +451,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= extrudes.Count; i++)
             {
                 ExtrudeFeature ext = extrudes[i];
-                if (!(ext.Definition.Extent is DistanceExtent distance))
-                {
-                    continue; // Only distance extents are read for now.
-                }
+                PartFeatureExtent extent = ext.Definition.Extent;
 
                 int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)ext.Profile.Parent).Name);
                 if (sketchIndex < 0)
@@ -462,15 +459,38 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     continue;
                 }
 
-                ir.Features.Add(new InventorExtrude
+                InventorExtrude? feature = null;
+                if (extent is DistanceExtent distance)
                 {
-                    Name = ext.Name,
-                    SketchIndex = sketchIndex,
-                    ProfileIndex = 0,
-                    Operation = ToOperation(ext.Operation),
-                    Direction = ToDirection(distance.Direction),
-                    Distance = distance.Distance._Value,
-                });
+                    feature = new InventorExtrude
+                    {
+                        ExtentKind = InventorExtentKind.Distance,
+                        Direction = ToDirection(distance.Direction),
+                        Distance = distance.Distance._Value,
+                    };
+                }
+                else if (extent is ThroughAllExtent through)
+                {
+                    // A through-all cut/join spans the existing material; the engine resolves the
+                    // span, so only the direction is needed. Dropping these was the biggest volume
+                    // gap (subtractive cuts vanished).
+                    feature = new InventorExtrude
+                    {
+                        ExtentKind = InventorExtentKind.ThroughAll,
+                        Direction = ToDirection(through.Direction),
+                    };
+                }
+
+                if (feature == null)
+                {
+                    continue; // to-face / from-to (need work-plane targets) are a later step
+                }
+
+                feature.Name = ext.Name;
+                feature.SketchIndex = sketchIndex;
+                feature.ProfileIndex = 0;
+                feature.Operation = ToOperation(ext.Operation);
+                ir.Features.Add(feature);
             }
         }
 

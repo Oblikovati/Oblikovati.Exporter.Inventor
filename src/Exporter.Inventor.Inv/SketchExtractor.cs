@@ -279,15 +279,15 @@ namespace Oblikovati.Exporter.Inventor.Inv
                         break;
                     case ParallelConstraint p:
                         kind = "parallel";
-                        ok = AddBetweenCurves(result, InventorConstraintKind.Parallel, curveIds, p.EntityOne, p.EntityTwo);
+                        ok = AddBetweenLines(result, InventorConstraintKind.Parallel, curveIds, p.EntityOne, p.EntityTwo);
                         break;
                     case PerpendicularConstraint pp:
                         kind = "perpendicular";
-                        ok = AddBetweenCurves(result, InventorConstraintKind.Perpendicular, curveIds, pp.EntityOne, pp.EntityTwo);
+                        ok = AddBetweenLines(result, InventorConstraintKind.Perpendicular, curveIds, pp.EntityOne, pp.EntityTwo);
                         break;
                     case CollinearConstraint col:
                         kind = "collinear";
-                        ok = AddBetweenCurves(result, InventorConstraintKind.Collinear, curveIds, col.EntityOne, col.EntityTwo);
+                        ok = AddBetweenLines(result, InventorConstraintKind.Collinear, curveIds, col.EntityOne, col.EntityTwo);
                         break;
                     case ConcentricConstraint con:
                         kind = "concentric";
@@ -299,7 +299,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
                         break;
                     case EqualLengthConstraint eq:
                         kind = "equal-length";
-                        ok = AddBetweenCurves(result, InventorConstraintKind.EqualLength, curveIds, eq.LineOne, eq.LineTwo);
+                        ok = AddBetweenLines(result, InventorConstraintKind.EqualLength, curveIds, eq.LineOne, eq.LineTwo);
                         break;
                     case EqualRadiusConstraint er:
                         kind = "equal-radius";
@@ -400,6 +400,32 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
             return false;
         }
+
+        // Parallel/perpendicular/collinear/equal-length are line-to-line in the sketch solver, and
+        // the reader resolves both operands as lines. Inventor, however, permits some of these
+        // against a curve — e.g. a line perpendicular to an arc or circle, which there means the
+        // line passes through the centre (a relation the solver does not model). Emitting such a
+        // constraint writes an unloadable recipe ("entity N is *sketch.Arc, want a line"), so a
+        // non-line operand is skipped and reported rather than corrupting the document.
+        // (TorquimeterRotationAxis.ipt: a perpendicular recorded between a line and an arc.)
+        private static bool AddBetweenLines(
+            InventorSketch result, InventorConstraintKind kind, IDictionary<object, long> curveIds, object a, object b)
+        {
+            if (curveIds.TryGetValue(a, out long ida) && curveIds.TryGetValue(b, out long idb) &&
+                IsLine(result, ida) && IsLine(result, idb))
+            {
+                var c = new InventorSketchConstraint { Kind = kind };
+                c.Curves.Add(ida);
+                c.Curves.Add(idb);
+                result.Constraints.Add(c);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsLine(InventorSketch result, long id) =>
+            FindCurve(result, id)?.Kind == InventorCurveKind.Line;
 
         // Two entities symmetric about a line. The engine's symmetry is point-based, so this is
         // read only when both entities resolve to points (e.g. curve endpoints) and the axis to a curve.

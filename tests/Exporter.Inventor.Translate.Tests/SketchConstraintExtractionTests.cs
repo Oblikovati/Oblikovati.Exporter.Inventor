@@ -22,11 +22,12 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
         private static (InventorSketch Sketch, ExportReport Report) ExtractWithReport(
             IList<SketchLine> lines, IList<SketchCircle> circles,
-            IList<GeometricConstraint> constraints, IList<DimensionConstraint> dimensions)
+            IList<GeometricConstraint> constraints, IList<DimensionConstraint> dimensions,
+            IList<SketchArc>? arcs = null)
         {
             var sketch = new FakePlanarSketch(
                 "S", new FakePoint(0, 0, 0), new FakeLine(new FakeUnitVector(1, 0, 0)),
-                new FakePlane(new FakeUnitVector(0, 0, 1)), lines, circles, constraints, dimensions);
+                new FakePlane(new FakeUnitVector(0, 0, 1)), lines, circles, constraints, dimensions, arcs);
             var doc = new FakePartDocument(
                 "p.ipt", @"C:\work\p.ipt", new FakeUnitsOfMeasure(), new List<UserParameter>(),
                 new List<PlanarSketch> { sketch });
@@ -68,6 +69,42 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
             InventorSketchConstraint parallel = Assert.Single(sk.Constraints, c => c.Kind == InventorConstraintKind.Parallel);
             Assert.Equal(2, parallel.Curves.Count);
+        }
+
+        [Fact]
+        public void Reads_perpendicular_constraint_between_two_lines()
+        {
+            SketchLine bottom = FakeSketchLine.From(0, 0, 4, 0);
+            SketchLine side = FakeSketchLine.From(0, 0, 0, 3);
+            var constraints = new List<GeometricConstraint> { new FakePerpendicularConstraint(bottom, side) };
+
+            InventorSketch sk = Extract(
+                new List<SketchLine> { bottom, side }, new List<SketchCircle>(),
+                constraints, new List<DimensionConstraint>());
+
+            InventorSketchConstraint perp = Assert.Single(sk.Constraints, c => c.Kind == InventorConstraintKind.Perpendicular);
+            Assert.Equal(2, perp.Curves.Count);
+        }
+
+        [Fact]
+        public void Skips_and_reports_a_perpendicular_constraint_between_a_line_and_an_arc()
+        {
+            // Inventor allows a perpendicular between a line and an arc (the line passes through the
+            // arc's centre), but the sketch solver models perpendicular only line-to-line; emitting
+            // it would write an unloadable recipe ("*sketch.Arc, want a line"). It must be skipped
+            // and reported instead. Regression for TorquimeterRotationAxis.ipt (#arc-perp).
+            SketchLine line = FakeSketchLine.From(-2, 0, 2, 0);
+            var arc = new FakeSketchArc(0, 0, 2, 0, -2, 0, 3.14159);
+            var constraints = new List<GeometricConstraint> { new FakePerpendicularConstraint(line, arc) };
+
+            (InventorSketch sk, ExportReport report) = ExtractWithReport(
+                new List<SketchLine> { line }, new List<SketchCircle>(),
+                constraints, new List<DimensionConstraint>(), new List<SketchArc> { arc });
+
+            Assert.DoesNotContain(sk.Constraints, c => c.Kind == InventorConstraintKind.Perpendicular);
+            string skipped = Assert.Single(report.Unsupported);
+            Assert.Contains("perpendicular", skipped);
+            Assert.Contains("'S'", skipped); // names the sketch it came from
         }
 
         [Fact]
