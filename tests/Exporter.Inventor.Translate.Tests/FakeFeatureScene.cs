@@ -325,10 +325,17 @@ namespace Oblikovati.Exporter.Inventor.Tests
 
         public FakeExtrudeFeature(
             string name, PartFeatureOperationEnum operation, string parentSketchName, PartFeatureExtent extent)
+            : this(name, operation, parentSketchName, extent, null)
+        {
+        }
+
+        public FakeExtrudeFeature(
+            string name, PartFeatureOperationEnum operation, string parentSketchName, PartFeatureExtent extent,
+            IList<ProfilePath>? paths)
         {
             _name = name;
             _operation = operation;
-            _profile = new FakeProfile(parentSketchName);
+            _profile = new FakeProfile(parentSketchName, paths);
             _definition = new FakeExtrudeDefinition(extent);
         }
 
