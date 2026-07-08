@@ -25,6 +25,7 @@ namespace Oblikovati.Exporter.Inventor.Model
         Distance,
         ThroughAll,
         ToNext,
+        ToFace,
     }
 
     /// <summary>Base of an extracted Inventor feature. The translator dispatches on the concrete type.</summary>
@@ -60,6 +61,14 @@ namespace Oblikovati.Exporter.Inventor.Model
 
         /// <summary>Draft/taper angle in radians (0 for a straight extrude).</summary>
         public double TaperRadians { get; set; }
+
+        /// <summary>For a <see cref="InventorExtentKind.ToFace"/> extent: a point on the planar
+        /// termination face (model cm) and its normal. The reader names the stop face by this
+        /// geometry (toFaceGeom) since an exporter cannot mint the host's face key. Null otherwise.</summary>
+        public double[]? ToFaceCentroid { get; set; }
+
+        /// <summary>Normal of the <see cref="InventorExtentKind.ToFace"/> termination face (model unit).</summary>
+        public double[]? ToFaceNormal { get; set; }
 
         /// <summary>One interior seed point (sketch 2D, cm) per selected profile region. The reader
         /// resolves each to the region that contains it, replacing the fragile <see cref="ProfileIndex"/>

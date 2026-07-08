@@ -215,9 +215,22 @@ namespace Inventor
 
         public virtual Edges Edges => throw Stub.Error();
 
+        /// <summary>A point guaranteed to lie on the face; names a to-face extent's planar
+        /// termination target by geometry (a point on it plus the plane normal).</summary>
+        public virtual Point PointOnFace => throw Stub.Error();
+
         /// <summary>True when the face's normal runs opposite its surface parameterisation; used to
         /// recover the outward normal from the plane's own (direction-ambiguous) normal.</summary>
         public virtual bool IsParamReversed => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a B-rep face collection (1-based) — a to-face extent's termination target,
+    /// which Inventor stores as a <see cref="Faces"/> set even when it is a single face.</summary>
+    public class Faces
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual Face this[int index] => throw Stub.Error();
     }
 
     /// <summary>Stub of the revolve-features collection (object-indexed, 1-based).</summary>
@@ -298,6 +311,15 @@ namespace Inventor
     public class ThroughAllExtent : PartFeatureExtent
     {
         public virtual PartFeatureExtentDirectionEnum Direction => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a to-face extent: the extrude terminates at <see cref="ToEntity"/>, which for
+    /// a planar to-face target is a <see cref="Faces"/> collection (see the extractor).</summary>
+    public class ToExtent : PartFeatureExtent
+    {
+        public virtual PartFeatureExtentDirectionEnum Direction => throw Stub.Error();
+
+        public virtual object ToEntity => throw Stub.Error();
     }
 
     /// <summary>

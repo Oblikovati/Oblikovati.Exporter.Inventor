@@ -505,10 +505,23 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     Direction = ToDirection(through.Direction),
                 };
             }
+            else if (extent is ToExtent toExt && TryToFaceTarget(toExt, out double[]? toCentroid, out double[]? toNormal))
+            {
+                // A to-face extent stops at a planar face; naming that face by geometry (a point on
+                // it + its normal) lets the reader terminate the extrude there without a host face
+                // key. Dropping these was the last recurring extent gap (MagneticShieldBlock).
+                feature = new InventorExtrude
+                {
+                    ExtentKind = InventorExtentKind.ToFace,
+                    Direction = InventorExtentDirection.Positive,
+                    ToFaceCentroid = toCentroid,
+                    ToFaceNormal = toNormal,
+                };
+            }
 
             if (feature == null)
             {
-                return; // to-face / from-to (need work-plane targets) are a later step
+                return; // from-to / non-planar or multi-face to-face targets are a later step
             }
 
             feature.Name = ext.Name;
@@ -525,6 +538,43 @@ namespace Oblikovati.Exporter.Inventor.Inv
             // Author the exact selected profile loops (Profile.ProfilePaths) so the emitter can
             // reproduce the precise boundary; ProfileSeeds/SketchIndex above stay as the fallback.
             ProfileExtractor.Extract(ext, feature);
+        }
+
+        // Records a to-face (kToExtent) extent's planar target as a point on that face plus its
+        // normal (model cm/unit), for the reader's geometric toFace binding. Returns false when the
+        // target is not a single planar face — the caller then drops the feature, as before.
+        private static bool TryToFaceTarget(ToExtent toExt, out double[]? centroid, out double[]? normal)
+        {
+            centroid = null;
+            normal = null;
+            try
+            {
+                Face? face = ToFaceTargetFace(toExt.ToEntity);
+                if (face == null || !(face.Geometry is Plane plane))
+                {
+                    return false;
+                }
+
+                centroid = P3(face.PointOnFace);
+                normal = V(plane.Normal);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // The single planar target of a to-face extent: Inventor stores it as a Faces collection
+        // (the observed case), a lone Face, or none. Null ⇒ not a bindable single face.
+        private static Face? ToFaceTargetFace(object toEntity)
+        {
+            return toEntity switch
+            {
+                Face f => f,
+                Faces fs when fs.Count >= 1 => fs[1],
+                _ => null,
+            };
         }
 
         // One guaranteed-interior seed point (sketch cm) per region the feature's Profile

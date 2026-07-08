@@ -21,6 +21,7 @@ namespace Oblikovati.Exporter.Inventor.Emit.Tests
         [InlineData(InventorExtentKind.Distance, "distance")]
         [InlineData(InventorExtentKind.ThroughAll, "through-all")]
         [InlineData(InventorExtentKind.ToNext, "to-next")]
+        [InlineData(InventorExtentKind.ToFace, "to-face")]
         public void Maps_extent(InventorExtentKind kind, string expected) =>
             Assert.Equal(expected, FeatureMapping.Extent(kind));
 

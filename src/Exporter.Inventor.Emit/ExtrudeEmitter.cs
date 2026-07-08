@@ -57,6 +57,14 @@ namespace Oblikovati.Exporter.Inventor.Emit
                 args["profileSeeds"] = extrude.ProfileSeeds;
             if (extrude.ExtentKind == InventorExtentKind.Distance)
                 args["distance"] = FeatureMapping.Millimeters(extrude.Distance);
+            // A to-face extent names its planar stop face by geometry (the host has no key from us):
+            // a point on the face + its normal, which the host binds to the current body's face.
+            if (extrude.ExtentKind == InventorExtentKind.ToFace && extrude.ToFaceCentroid != null && extrude.ToFaceNormal != null)
+                args["toFaceGeom"] = new Dictionary<string, object?>
+                {
+                    ["centroid"] = extrude.ToFaceCentroid,
+                    ["normal"] = extrude.ToFaceNormal,
+                };
             if (Math.Abs(extrude.TaperRadians) > 1e-9)
                 args["taper"] = FeatureMapping.Degrees(extrude.TaperRadians);
             return args;

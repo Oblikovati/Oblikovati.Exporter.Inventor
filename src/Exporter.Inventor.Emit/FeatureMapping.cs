@@ -37,6 +37,7 @@ namespace Oblikovati.Exporter.Inventor.Emit
                 case InventorExtentKind.Distance: return "distance";
                 case InventorExtentKind.ThroughAll: return "through-all";
                 case InventorExtentKind.ToNext: return "to-next";
+                case InventorExtentKind.ToFace: return "to-face";
                 default: throw new ArgumentOutOfRangeException(nameof(kind), kind, "unknown extent kind");
             }
         }
