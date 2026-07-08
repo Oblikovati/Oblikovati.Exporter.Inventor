@@ -197,6 +197,15 @@ namespace Oblikovati.Exporter.Inventor.Recipe
         [YamlMember(Alias = "angle", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public double? Angle { get; set; }
 
+        // A specific centerline as the revolve axis (1-based sketch index + its line index),
+        // disambiguating the axis when several revolves share one sketch (each injects its own
+        // centerline). Null ⇒ own-centerline mode (the sketch's single centerline).
+        [YamlMember(Alias = "axisSketch", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public int? AxisSketch { get; set; }
+
+        [YamlMember(Alias = "axisLine", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public int? AxisLine { get; set; }
+
         [YamlMember(Alias = "operation")]
         public string Operation { get; set; } = "newBody";
     }

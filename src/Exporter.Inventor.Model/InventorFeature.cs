@@ -84,6 +84,12 @@ namespace Oblikovati.Exporter.Inventor.Model
         /// <summary>Swept angle in radians; 0 means a full revolution.</summary>
         public double AngleRadians { get; set; }
 
+        /// <summary>The line index (among the profile sketch's line-kind curves) of this revolve's
+        /// own injected axis centerline, or -1 for own-centerline mode. Emitting it disambiguates
+        /// the axis when several revolves share one sketch (each injects a centerline, so the
+        /// reader's "single centerline" fallback would be ambiguous).</summary>
+        public int AxisLineIndex { get; set; } = -1;
+
         /// <summary>Interior seed point(s) (sketch 2D, cm) selecting the revolved region by
         /// containment rather than the fragile <see cref="ProfileIndex"/>. The translator emits the
         /// first; empty ⇒ fall back to the index.</summary>

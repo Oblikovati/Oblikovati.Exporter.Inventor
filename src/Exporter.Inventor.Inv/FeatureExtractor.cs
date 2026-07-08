@@ -376,9 +376,13 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     continue;
                 }
 
-                // Oblikovati revolves about the sketch's own centerline, so add the axis line to
-                // the profile sketch as a centerline (its 2D endpoints come straight from the axis).
-                InjectCenterline(ir.Sketches[sketchIndex], rev._AxisEntity);
+                // Oblikovati revolves about a sketch centerline, so add the axis line to the profile
+                // sketch as a centerline (its 2D endpoints come straight from the axis). Record the
+                // centerline's line index so the recipe can name it explicitly — several revolves may
+                // share one sketch, and then "the sketch's single centerline" is ambiguous.
+                InventorSketch profileSketch = ir.Sketches[sketchIndex];
+                int axisLineIndex = CountLines(profileSketch); // the index the appended centerline takes
+                bool injected = InjectCenterline(profileSketch, rev._AxisEntity);
                 var revolve = new InventorRevolve
                 {
                     Name = rev.Name,
@@ -388,6 +392,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     AngleRadians = rev.ExtentType == PartFeatureExtentEnum.kAngleExtent
                         ? ((AngleExtent)rev.Extent).Angle._Value
                         : 0, // full sweep
+                    AxisLineIndex = injected ? axisLineIndex : -1,
                 };
                 foreach (double[] seed in ProfileSeeds(rev.Profile))
                 {
@@ -398,14 +403,17 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
         }
 
-        private static void InjectCenterline(InventorSketch sketch, SketchLine axis)
+        // Adds the revolve axis to the profile sketch as a centerline line. Returns false (adds
+        // nothing) when the axis has no readable 2D geometry, so the caller falls back to
+        // own-centerline mode instead of naming a line that was never emitted.
+        private static bool InjectCenterline(InventorSketch sketch, SketchLine axis)
         {
             // Read the axis from its 2D line geometry, not its sketch points: a revolve axis is
             // often a projected reference line whose Start/EndSketchPoint are null.
             LineSegment2d? geometry = axis?.Geometry;
             if (geometry == null)
             {
-                return;
+                return false;
             }
 
             long nextId = 1;
@@ -425,6 +433,24 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 End = P2(geometry.EndPoint),
                 Centerline = true,
             });
+            return true;
+        }
+
+        // The number of line-kind curves currently in the sketch — the 0-based line index the next
+        // appended line will occupy. Mirrors the reader's Lines() ordering (line-kind entities in
+        // recipe order), so it names the centerline the reader will resolve.
+        private static int CountLines(InventorSketch sketch)
+        {
+            int n = 0;
+            foreach (InventorCurve c in sketch.Curves)
+            {
+                if (c.Kind == InventorCurveKind.Line)
+                {
+                    n++;
+                }
+            }
+
+            return n;
         }
 
         private static double[] P2(Point2d p) => new[] { p.X, p.Y };
