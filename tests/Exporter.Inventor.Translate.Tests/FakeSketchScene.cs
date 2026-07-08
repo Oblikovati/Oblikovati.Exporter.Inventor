@@ -267,9 +267,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly double _minorR;
         private readonly double _start;
         private readonly double _sweep;
+        private readonly double _cx;
+        private readonly double _cy;
         public FakeSketchEllipticalArc(
             double cx, double cy, double[] majorAxis, double majorR, double minorR, double startAngle, double sweepAngle)
         {
+            _cx = cx;
+            _cy = cy;
             _center = new FakeSketchPoint(cx, cy);
             _major = new FakeUnitVector2d(majorAxis[0], majorAxis[1]);
             _majorR = majorR;
@@ -283,6 +287,16 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override double MinorRadius => _minorR;
         public override double StartAngle => _start;
         public override double SweepAngle => _sweep;
+        public override SketchPoint StartSketchPoint => PointAt(_start);
+        public override SketchPoint EndSketchPoint => PointAt(_start + _sweep);
+
+        // The parametric point at angle a: center + majorR·cos(a)·major + minorR·sin(a)·minorPerp,
+        // minorPerp = major rotated +90° — matching the host's elliptical-arc point formula.
+        private SketchPoint PointAt(double a)
+        {
+            double mx = _majorR * Math.Cos(a), my = _minorR * Math.Sin(a);
+            return new FakeSketchPoint(_cx + mx * _major.X - my * _major.Y, _cy + mx * _major.Y + my * _major.X);
+        }
         public override bool Construction => false;
     }
 

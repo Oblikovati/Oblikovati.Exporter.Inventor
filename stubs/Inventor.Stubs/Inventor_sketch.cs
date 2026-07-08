@@ -219,6 +219,10 @@ namespace Inventor
     {
         public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
 
+        public virtual SketchPoint StartSketchPoint => throw Stub.Error();
+
+        public virtual SketchPoint EndSketchPoint => throw Stub.Error();
+
         public virtual UnitVector2d MajorAxisVector => throw Stub.Error();
 
         public virtual double MajorRadius => throw Stub.Error();
