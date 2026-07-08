@@ -27,6 +27,25 @@ namespace Inventor
         public virtual WorkPlanes WorkPlanes => throw Stub.Error();
     }
 
+    /// <summary>Stub of a sheet-metal part's component definition: the sheet thickness and its
+    /// flat pattern (created on demand via Unfold).</summary>
+    public class SheetMetalComponentDefinition : PartComponentDefinition
+    {
+        public virtual Parameter Thickness => throw Stub.Error();
+
+        public virtual bool HasFlatPattern => throw Stub.Error();
+
+        public virtual FlatPattern FlatPattern => throw Stub.Error();
+
+        public virtual void Unfold() => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a sheet-metal flat pattern; its TopFace's outline (and holes) is the plate.</summary>
+    public class FlatPattern
+    {
+        public virtual Face TopFace => throw Stub.Error();
+    }
+
     /// <summary>
     /// Stub of the master Parameters collection. The exporter reads <see cref="UserParameters"/>
     /// (the user-authored named parameters); model parameters (d0, d1…) are feature/sketch

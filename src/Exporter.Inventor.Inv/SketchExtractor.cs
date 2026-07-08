@@ -658,7 +658,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
         // Emit a coincident constraint for each pair of line endpoints that meet, so the profile
         // closes (mirrors how the engine records coincidence between distinct points).
-        private static void InferCoincidences(InventorSketch sketch)
+        internal static void InferCoincidences(InventorSketch sketch)
         {
             var slots = new List<(InventorPointRef Ref, double[] Pt)>();
             foreach (InventorCurve c in sketch.Curves)

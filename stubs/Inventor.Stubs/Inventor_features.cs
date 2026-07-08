@@ -153,12 +153,23 @@ namespace Inventor
         public virtual Line Line => throw Stub.Error();
     }
 
-    /// <summary>Stub of a B-rep edge; its vertices give a straight edge's endpoints.</summary>
+    /// <summary>Stub of a B-rep edge; its vertices give a straight edge's endpoints, its evaluator
+    /// samples a curved edge.</summary>
     public class Edge
     {
         public virtual Vertex StartVertex => throw Stub.Error();
 
         public virtual Vertex StopVertex => throw Stub.Error();
+
+        public virtual CurveEvaluator Evaluator => throw Stub.Error();
+    }
+
+    /// <summary>Stub of a B-rep edge collection (1-based, int-indexed).</summary>
+    public class Edges
+    {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual Edge this[int index] => throw Stub.Error();
     }
 
     /// <summary>Stub of a B-rep vertex.</summary>
@@ -173,6 +184,8 @@ namespace Inventor
         public virtual object Geometry => throw Stub.Error();
 
         public virtual Vertices Vertices => throw Stub.Error();
+
+        public virtual Edges Edges => throw Stub.Error();
 
         /// <summary>True when the face's normal runs opposite its surface parameterisation; used to
         /// recover the outward normal from the plane's own (direction-ambiguous) normal.</summary>
