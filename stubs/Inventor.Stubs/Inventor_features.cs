@@ -153,8 +153,8 @@ namespace Inventor
         public virtual Line Line => throw Stub.Error();
     }
 
-    /// <summary>Stub of a B-rep edge; its vertices give a straight edge's endpoints, its evaluator
-    /// samples a curved edge.</summary>
+    /// <summary>Stub of a B-rep edge; its vertices give a straight edge's endpoints, its Geometry the
+    /// underlying curve (a Circle for a closed circular edge, which has no vertices).</summary>
     public class Edge
     {
         public virtual Vertex StartVertex => throw Stub.Error();
@@ -162,6 +162,28 @@ namespace Inventor
         public virtual Vertex StopVertex => throw Stub.Error();
 
         public virtual CurveEvaluator Evaluator => throw Stub.Error();
+
+        public virtual CurveTypeEnum GeometryType => throw Stub.Error();
+
+        public virtual object Geometry => throw Stub.Error();
+    }
+
+    /// <summary>The underlying-curve kinds an Edge.Geometry can take (only the circle case the
+    /// dress-up extractor reads is modelled here).</summary>
+    public enum CurveTypeEnum
+    {
+        kCircleCurve = 5124,
+    }
+
+    /// <summary>Stub of a transient 3D circle (a closed circular edge's geometry): centre + axis
+    /// normal + radius. The dress-up extractor names a bore/boss rim by its Center and Normal.</summary>
+    public class Circle
+    {
+        public virtual Point Center => throw Stub.Error();
+
+        public virtual UnitVector Normal => throw Stub.Error();
+
+        public virtual double Radius => throw Stub.Error();
     }
 
     /// <summary>Stub of a B-rep edge collection (1-based, int-indexed).</summary>
