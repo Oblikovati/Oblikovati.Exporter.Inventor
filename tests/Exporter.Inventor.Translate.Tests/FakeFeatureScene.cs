@@ -23,6 +23,13 @@ namespace Oblikovati.Exporter.Inventor.Tests
         private readonly LoftFeatures _lofts;
         private readonly SweepFeatures _sweeps;
 
+        // The flat, build-order Features collection the real FeatureExtractor now walks. The scene
+        // supplies features grouped by type, so present them flat in the same order the extractor
+        // used to process the type collections (extrudes, revolves, patterns, mirrors, then the
+        // dress-ups, then lofts and sweeps) — this keeps each test's ir.Features ordering unchanged
+        // while exercising the new single-pass dispatch.
+        private readonly List<object> _flat;
+
         public FakePartFeatures(
             IList<ExtrudeFeature> extrudes,
             IList<RevolveFeature>? revolves = null,
@@ -37,19 +44,49 @@ namespace Oblikovati.Exporter.Inventor.Tests
             IList<LoftFeature>? lofts = null,
             IList<SweepFeature>? sweeps = null)
         {
+            revolves ??= new List<RevolveFeature>();
+            rectPatterns ??= new List<RectangularPatternFeature>();
+            circPatterns ??= new List<CircularPatternFeature>();
+            mirrors ??= new List<MirrorFeature>();
+            fillets ??= new List<FilletFeature>();
+            chamfers ??= new List<ChamferFeature>();
+            shells ??= new List<ShellFeature>();
+            drafts ??= new List<FaceDraftFeature>();
+            holes ??= new List<HoleFeature>();
+            lofts ??= new List<LoftFeature>();
+            sweeps ??= new List<SweepFeature>();
+
             _extrudes = new FakeExtrudeFeatures(extrudes);
-            _revolves = new FakeRevolveFeatures(revolves ?? new List<RevolveFeature>());
-            _rectPatterns = new FakeRectangularPatternFeatures(rectPatterns ?? new List<RectangularPatternFeature>());
-            _circPatterns = new FakeCircularPatternFeatures(circPatterns ?? new List<CircularPatternFeature>());
-            _mirrors = new FakeMirrorFeatures(mirrors ?? new List<MirrorFeature>());
-            _fillets = new FakeFilletFeatures(fillets ?? new List<FilletFeature>());
-            _chamfers = new FakeChamferFeatures(chamfers ?? new List<ChamferFeature>());
-            _shells = new FakeShellFeatures(shells ?? new List<ShellFeature>());
-            _drafts = new FakeFaceDraftFeatures(drafts ?? new List<FaceDraftFeature>());
-            _holes = new FakeHoleFeatures(holes ?? new List<HoleFeature>());
-            _lofts = new FakeLoftFeatures(lofts ?? new List<LoftFeature>());
-            _sweeps = new FakeSweepFeatures(sweeps ?? new List<SweepFeature>());
+            _revolves = new FakeRevolveFeatures(revolves);
+            _rectPatterns = new FakeRectangularPatternFeatures(rectPatterns);
+            _circPatterns = new FakeCircularPatternFeatures(circPatterns);
+            _mirrors = new FakeMirrorFeatures(mirrors);
+            _fillets = new FakeFilletFeatures(fillets);
+            _chamfers = new FakeChamferFeatures(chamfers);
+            _shells = new FakeShellFeatures(shells);
+            _drafts = new FakeFaceDraftFeatures(drafts);
+            _holes = new FakeHoleFeatures(holes);
+            _lofts = new FakeLoftFeatures(lofts);
+            _sweeps = new FakeSweepFeatures(sweeps);
+
+            _flat = new List<object>();
+            foreach (ExtrudeFeature e in extrudes) _flat.Add(e);
+            foreach (RevolveFeature r in revolves) _flat.Add(r);
+            foreach (RectangularPatternFeature p in rectPatterns) _flat.Add(p);
+            foreach (CircularPatternFeature p in circPatterns) _flat.Add(p);
+            foreach (MirrorFeature m in mirrors) _flat.Add(m);
+            foreach (FilletFeature f in fillets) _flat.Add(f);
+            foreach (ChamferFeature c in chamfers) _flat.Add(c);
+            foreach (ShellFeature s in shells) _flat.Add(s);
+            foreach (FaceDraftFeature d in drafts) _flat.Add(d);
+            foreach (HoleFeature h in holes) _flat.Add(h);
+            foreach (LoftFeature l in lofts) _flat.Add(l);
+            foreach (SweepFeature sw in sweeps) _flat.Add(sw);
         }
+
+        public override int Count => _flat.Count;
+
+        public override object this[int index] => _flat[index - 1];
 
         public override ExtrudeFeatures ExtrudeFeatures => _extrudes;
 

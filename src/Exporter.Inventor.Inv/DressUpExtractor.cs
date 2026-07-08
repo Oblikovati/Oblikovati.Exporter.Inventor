@@ -16,57 +16,43 @@ namespace Oblikovati.Exporter.Inventor.Inv
     /// </summary>
     public static class DressUpExtractor
     {
-        public static void Extract(PartFeatures features, InventorDocument ir)
+        // Each single-feature extractor is called by FeatureExtractor's build-order walk of the flat
+        // Features collection, so a dress-up feature is emitted at its true position in history
+        // (after the solid it modifies), not grouped by type at the end.
+        internal static void ExtractOneDraft(FaceDraftFeature d, InventorDocument ir)
         {
-            ExtractFillets(features.FilletFeatures, ir);
-            ExtractChamfers(features.ChamferFeatures, ir);
-            ExtractShells(features.ShellFeatures, ir);
-            ExtractDrafts(features.FaceDraftFeatures, ir);
-            ExtractHoles(features.HoleFeatures, ir);
-        }
-
-        private static void ExtractDrafts(FaceDraftFeatures drafts, InventorDocument ir)
-        {
-            for (int i = 1; i <= drafts.Count; i++)
+            double[]? pull = ResolveDirection(d._PullDirection);
+            if (pull == null)
             {
-                FaceDraftFeature d = drafts[i];
-                double[]? pull = ResolveDirection(d._PullDirection);
-                if (pull == null)
-                {
-                    continue; // unresolved pull direction -> skip rather than guess
-                }
+                return; // unresolved pull direction -> skip rather than guess
+            }
 
-                var draft = new InventorDraft { Name = d.Name, AngleRadians = d._DraftAngle._Value, Pull = pull };
-                FaceCollection faces = d._InputFaces;
-                for (int j = 1; j <= faces.Count; j++)
+            var draft = new InventorDraft { Name = d.Name, AngleRadians = d._DraftAngle._Value, Pull = pull };
+            FaceCollection faces = d._InputFaces;
+            for (int j = 1; j <= faces.Count; j++)
+            {
+                InventorFaceDescriptor? face = FaceDescriptor((Face)faces[j]);
+                if (face != null)
                 {
-                    InventorFaceDescriptor? face = FaceDescriptor((Face)faces[j]);
-                    if (face != null)
-                    {
-                        draft.Faces.Add(face);
-                    }
+                    draft.Faces.Add(face);
                 }
+            }
 
-                if (draft.Faces.Count > 0)
-                {
-                    ir.Features.Add(draft);
-                }
+            if (draft.Faces.Count > 0)
+            {
+                ir.Features.Add(draft);
             }
         }
 
-        private static void ExtractHoles(HoleFeatures holes, InventorDocument ir)
+        internal static void ExtractOneHole(HoleFeature h, InventorDocument ir)
         {
-            for (int i = 1; i <= holes.Count; i++)
+            InventorFaceDescriptor? placement = PlacementFace(h.PlacementDefinition);
+            if (placement == null)
             {
-                HoleFeature h = holes[i];
-                InventorFaceDescriptor? placement = PlacementFace(h.PlacementDefinition);
-                if (placement == null)
-                {
-                    continue; // placement face must resolve to a planar body face
-                }
-
-                AddHoles(ir, h, placement);
+                return; // placement face must resolve to a planar body face
             }
+
+            AddHoles(ir, h, placement);
         }
 
         // One Oblikovati hole per drill centre this feature places (a sketch placement drills
@@ -216,78 +202,66 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
         }
 
-        private static void ExtractFillets(FilletFeatures fillets, InventorDocument ir)
+        internal static void ExtractOneFillet(FilletFeature f, InventorDocument ir)
         {
-            for (int i = 1; i <= fillets.Count; i++)
+            FilletDefinition def = f.FilletDefinition;
+            var fillet = new InventorFillet { Name = f.Name };
+            bool haveRadius = false;
+            for (int s = 1; s <= def.EdgeSetCount; s++)
             {
-                FilletFeature f = fillets[i];
-                FilletDefinition def = f.FilletDefinition;
-                var fillet = new InventorFillet { Name = f.Name };
-                bool haveRadius = false;
-                for (int s = 1; s <= def.EdgeSetCount; s++)
+                if (!(def.get_EdgeSetItem(s) is FilletConstantRadiusEdgeSet set))
                 {
-                    if (!(def.get_EdgeSetItem(s) is FilletConstantRadiusEdgeSet set))
-                    {
-                        continue; // variable-radius / face sets are a later step
-                    }
-
-                    if (!haveRadius)
-                    {
-                        fillet.RadiusCm = set.Radius._Value;
-                        haveRadius = true;
-                    }
-
-                    // Some constant-radius edge sets (e.g. face/loop-defined fillets) reject
-                    // get_Edges with E_FAIL; skip that set rather than aborting the whole export.
-                    EdgeCollection? edges = TryGetEdges(set);
-                    if (edges != null)
-                    {
-                        AddEdges(fillet.Edges, edges);
-                    }
+                    continue; // variable-radius / face sets are a later step
                 }
 
-                if (fillet.Edges.Count > 0)
+                if (!haveRadius)
                 {
-                    ir.Features.Add(fillet);
+                    fillet.RadiusCm = set.Radius._Value;
+                    haveRadius = true;
                 }
+
+                // Some constant-radius edge sets (e.g. face/loop-defined fillets) reject
+                // get_Edges with E_FAIL; skip that set rather than aborting the whole export.
+                EdgeCollection? edges = TryGetEdges(set);
+                if (edges != null)
+                {
+                    AddEdges(fillet.Edges, edges);
+                }
+            }
+
+            if (fillet.Edges.Count > 0)
+            {
+                ir.Features.Add(fillet);
             }
         }
 
-        private static void ExtractChamfers(ChamferFeatures chamfers, InventorDocument ir)
+        internal static void ExtractOneChamfer(ChamferFeature c, InventorDocument ir)
         {
-            for (int i = 1; i <= chamfers.Count; i++)
+            var chamfer = new InventorChamfer { Name = c.Name, DistanceCm = c.Definition.Distance._Value };
+            AddEdges(chamfer.Edges, c.ChamferedEdges);
+            if (chamfer.Edges.Count > 0)
             {
-                ChamferFeature c = chamfers[i];
-                var chamfer = new InventorChamfer { Name = c.Name, DistanceCm = c.Definition.Distance._Value };
-                AddEdges(chamfer.Edges, c.ChamferedEdges);
-                if (chamfer.Edges.Count > 0)
-                {
-                    ir.Features.Add(chamfer);
-                }
+                ir.Features.Add(chamfer);
             }
         }
 
-        private static void ExtractShells(ShellFeatures shells, InventorDocument ir)
+        internal static void ExtractOneShell(ShellFeature s, InventorDocument ir)
         {
-            for (int i = 1; i <= shells.Count; i++)
+            ShellDefinition def = s.Definition;
+            var shell = new InventorShell { Name = s.Name, ThicknessCm = def.Thickness._Value };
+            FaceCollection faces = def.InputFaces;
+            for (int j = 1; j <= faces.Count; j++)
             {
-                ShellFeature s = shells[i];
-                ShellDefinition def = s.Definition;
-                var shell = new InventorShell { Name = s.Name, ThicknessCm = def.Thickness._Value };
-                FaceCollection faces = def.InputFaces;
-                for (int j = 1; j <= faces.Count; j++)
+                InventorFaceDescriptor? face = FaceDescriptor((Face)faces[j]);
+                if (face != null)
                 {
-                    InventorFaceDescriptor? face = FaceDescriptor((Face)faces[j]);
-                    if (face != null)
-                    {
-                        shell.RemovedFaces.Add(face);
-                    }
+                    shell.RemovedFaces.Add(face);
                 }
+            }
 
-                if (shell.RemovedFaces.Count > 0)
-                {
-                    ir.Features.Add(shell);
-                }
+            if (shell.RemovedFaces.Count > 0)
+            {
+                ir.Features.Add(shell);
             }
         }
 

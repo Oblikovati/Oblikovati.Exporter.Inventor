@@ -31,9 +31,15 @@ namespace Inventor
         kSymmetricExtentDirection = 20995,
     }
 
-    /// <summary>Stub of the feature collections root.</summary>
+    /// <summary>Stub of the feature collections root. The flat collection enumerates all part
+    /// features in build order (1-based, object-indexed); the real interop's indexer returns a
+    /// PartFeature, so read each item as object and dispatch by concrete type.</summary>
     public class PartFeatures
     {
+        public virtual int Count => throw Stub.Error();
+
+        public virtual object this[int index] => throw Stub.Error();
+
         public virtual ExtrudeFeatures ExtrudeFeatures => throw Stub.Error();
 
         public virtual RevolveFeatures RevolveFeatures => throw Stub.Error();

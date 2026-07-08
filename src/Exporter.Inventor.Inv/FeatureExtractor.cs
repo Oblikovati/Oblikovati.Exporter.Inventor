@@ -20,17 +20,36 @@ namespace Oblikovati.Exporter.Inventor.Inv
         public static void Extract(PartDocument document, InventorDocument ir)
         {
             PartComponentDefinition definition = document.ComponentDefinition;
-            PartFeatures features = definition.Features;
+            // Work planes are not part of the Features history, so read them first (as fixed-frame
+            // datums the later features may reference).
             ExtractWorkPlanes(definition.WorkPlanes, ir);
-            ExtractExtrudes(features.ExtrudeFeatures, ir);
-            ExtractRevolves(features.RevolveFeatures, ir);
-            // Patterns/mirror reference earlier features by name, so extract them last.
-            ExtractRectangularPatterns(features.RectangularPatternFeatures, ir);
-            ExtractCircularPatterns(features.CircularPatternFeatures, ir);
-            ExtractMirrors(features.MirrorFeatures, ir);
-            DressUpExtractor.Extract(features, ir);
-            ExtractLofts(features.LoftFeatures, ir);
-            ExtractSweeps(features.SweepFeatures, ir);
+
+            // The flat Features collection enumerates in BUILD ORDER, so walk it once and dispatch
+            // each feature to its single-feature extractor. This preserves the browser/build order
+            // in ir.Features (the type-segregated collections destroyed it, emitting subtractive
+            // cuts before the base solid). Patterns/mirror resolve their sources against the
+            // features extracted so far — build order guarantees a source precedes its pattern.
+            PartFeatures features = definition.Features;
+            for (int i = 1; i <= features.Count; i++)
+            {
+                object feature = features[i];
+                switch (feature)
+                {
+                    case ExtrudeFeature e: ExtractOneExtrude(e, ir); break;
+                    case RevolveFeature r: ExtractOneRevolve(r, ir); break;
+                    case RectangularPatternFeature p: ExtractOneRectangularPattern(p, ir); break;
+                    case CircularPatternFeature p: ExtractOneCircularPattern(p, ir); break;
+                    case MirrorFeature m: ExtractOneMirror(m, ir); break;
+                    case LoftFeature l: ExtractOneLoft(l, ir); break;
+                    case SweepFeature s: ExtractOneSweep(s, ir); break;
+                    case HoleFeature h: DressUpExtractor.ExtractOneHole(h, ir); break;
+                    case FilletFeature f: DressUpExtractor.ExtractOneFillet(f, ir); break;
+                    case ChamferFeature c: DressUpExtractor.ExtractOneChamfer(c, ir); break;
+                    case ShellFeature sh: DressUpExtractor.ExtractOneShell(sh, ir); break;
+                    case FaceDraftFeature d: DressUpExtractor.ExtractOneDraft(d, ir); break;
+                    default: break; // unsupported feature kind: skip (as before)
+                }
+            }
         }
 
         // Chordal tolerance (cm) for tessellating a curved path segment into the path polyline.
@@ -39,37 +58,33 @@ namespace Oblikovati.Exporter.Inventor.Inv
         // Sweeps whose path is a chain of line/arc/spline segments: each path entity's 3D geometry
         // gives a segment (oriented by OpposedToSketchEntity) chained into the path polyline; curved
         // segments are tessellated via the curve evaluator. A path with an unknown entity is skipped.
-        private static void ExtractSweeps(SweepFeatures sweeps, InventorDocument ir)
+        private static void ExtractOneSweep(SweepFeature sw, InventorDocument ir)
         {
-            for (int i = 1; i <= sweeps.Count; i++)
+            int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)sw.Profile.Parent).Name);
+            if (sketchIndex < 0)
             {
-                SweepFeature sw = sweeps[i];
-                int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)sw.Profile.Parent).Name);
-                if (sketchIndex < 0)
-                {
-                    continue;
-                }
-
-                List<double[]>? path = BuildPath(sw.Path);
-                if (path == null || path.Count < 2)
-                {
-                    continue;
-                }
-
-                var sweep = new InventorSweep
-                {
-                    Name = sw.Name,
-                    ProfileSketchIndex = sketchIndex,
-                    ProfileIndex = 0,
-                    Operation = ToOperation(sw.Operation),
-                };
-                foreach (double[] p in path)
-                {
-                    sweep.Path.Add(p);
-                }
-
-                ir.Features.Add(sweep);
+                return;
             }
+
+            List<double[]>? path = BuildPath(sw.Path);
+            if (path == null || path.Count < 2)
+            {
+                return;
+            }
+
+            var sweep = new InventorSweep
+            {
+                Name = sw.Name,
+                ProfileSketchIndex = sketchIndex,
+                ProfileIndex = 0,
+                Operation = ToOperation(sw.Operation),
+            };
+            foreach (double[] p in path)
+            {
+                sweep.Path.Add(p);
+            }
+
+            ir.Features.Add(sweep);
         }
 
         private static List<double[]>? BuildPath(Path path)
@@ -160,120 +175,104 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
         // Lofts reference their section profiles' sketches by name; sweeps need the path polyline
         // evaluated (a later step), so only loft is read here.
-        private static void ExtractLofts(LoftFeatures lofts, InventorDocument ir)
+        private static void ExtractOneLoft(LoftFeature l, InventorDocument ir)
         {
-            for (int i = 1; i <= lofts.Count; i++)
+            var loft = new InventorLoft { Name = l.Name, Operation = ToOperation(l.Operation) };
+            ObjectCollection sections = l.Sections;
+            bool resolved = true;
+            for (int j = 1; j <= sections.Count; j++)
             {
-                LoftFeature l = lofts[i];
-                var loft = new InventorLoft { Name = l.Name, Operation = ToOperation(l.Operation) };
-                ObjectCollection sections = l.Sections;
-                bool resolved = true;
-                for (int j = 1; j <= sections.Count; j++)
+                if (!(sections[j] is Profile profile))
                 {
-                    if (!(sections[j] is Profile profile))
-                    {
-                        resolved = false; // apex/point sections are a later step
-                        break;
-                    }
-
-                    int idx = SketchIndexOf(ir, ((PlanarSketch)profile.Parent).Name);
-                    if (idx < 0)
-                    {
-                        resolved = false;
-                        break;
-                    }
-
-                    loft.Sections.Add(new InventorLoftSection { SketchIndex = idx, ProfileIndex = 0 });
+                    resolved = false; // apex/point sections are a later step
+                    break;
                 }
 
-                if (resolved && loft.Sections.Count >= 2)
+                int idx = SketchIndexOf(ir, ((PlanarSketch)profile.Parent).Name);
+                if (idx < 0)
                 {
-                    ir.Features.Add(loft);
+                    resolved = false;
+                    break;
                 }
+
+                loft.Sections.Add(new InventorLoftSection { SketchIndex = idx, ProfileIndex = 0 });
+            }
+
+            if (resolved && loft.Sections.Count >= 2)
+            {
+                ir.Features.Add(loft);
             }
         }
 
-        private static void ExtractRectangularPatterns(RectangularPatternFeatures patterns, InventorDocument ir)
+        private static void ExtractOneRectangularPattern(RectangularPatternFeature p, InventorDocument ir)
         {
-            for (int i = 1; i <= patterns.Count; i++)
+            double[]? xDir = ResolveDirection(p.XDirectionEntity, p.NaturalXDirection);
+            if (xDir == null || !TryResolveSources(p.ParentFeatures, ir, out var sources))
             {
-                RectangularPatternFeature p = patterns[i];
-                double[]? xDir = ResolveDirection(p.XDirectionEntity, p.NaturalXDirection);
-                if (xDir == null || !TryResolveSources(p.ParentFeatures, ir, out var sources))
-                {
-                    continue; // unresolved direction or source -> skip rather than guess
-                }
-
-                // A single-direction rectangular pattern leaves the Y parameters (YCount/YSpacing)
-                // null, so read them only when a second direction is actually present.
-                var pattern = new InventorRectangularPattern
-                {
-                    Name = p.Name,
-                    CountX = (int)p.XCount._Value,
-                    CountY = p.YCount != null ? (int)p.YCount._Value : 1,
-                    StepX = Scale(xDir, p.XSpacing._Value),
-                };
-                // Only touch the Y-direction entities for a genuine two-direction pattern: a
-                // single-direction pattern raises E_FAIL just accessing YDirectionEntity /
-                // NaturalYDirection.
-                if (pattern.CountY > 1)
-                {
-                    double[]? yDir = ResolveDirection(p.YDirectionEntity, p.NaturalYDirection);
-                    if (yDir != null && p.YSpacing != null)
-                    {
-                        pattern.StepY = Scale(yDir, p.YSpacing._Value);
-                    }
-                }
-
-                AddSources(pattern, sources);
-                ir.Features.Add(pattern);
+                return; // unresolved direction or source -> skip rather than guess
             }
+
+            // A single-direction rectangular pattern leaves the Y parameters (YCount/YSpacing)
+            // null, so read them only when a second direction is actually present.
+            var pattern = new InventorRectangularPattern
+            {
+                Name = p.Name,
+                CountX = (int)p.XCount._Value,
+                CountY = p.YCount != null ? (int)p.YCount._Value : 1,
+                StepX = Scale(xDir, p.XSpacing._Value),
+            };
+            // Only touch the Y-direction entities for a genuine two-direction pattern: a
+            // single-direction pattern raises E_FAIL just accessing YDirectionEntity /
+            // NaturalYDirection.
+            if (pattern.CountY > 1)
+            {
+                double[]? yDir = ResolveDirection(p.YDirectionEntity, p.NaturalYDirection);
+                if (yDir != null && p.YSpacing != null)
+                {
+                    pattern.StepY = Scale(yDir, p.YSpacing._Value);
+                }
+            }
+
+            AddSources(pattern, sources);
+            ir.Features.Add(pattern);
         }
 
-        private static void ExtractCircularPatterns(CircularPatternFeatures patterns, InventorDocument ir)
+        private static void ExtractOneCircularPattern(CircularPatternFeature p, InventorDocument ir)
         {
-            for (int i = 1; i <= patterns.Count; i++)
+            (double[] point, double[] dir)? axis = ResolveAxis(p.AxisEntity, p.NaturalAxisDirection);
+            if (axis == null || !TryResolveSources(p.ParentFeatures, ir, out var sources))
             {
-                CircularPatternFeature p = patterns[i];
-                (double[] point, double[] dir)? axis = ResolveAxis(p.AxisEntity, p.NaturalAxisDirection);
-                if (axis == null || !TryResolveSources(p.ParentFeatures, ir, out var sources))
-                {
-                    continue;
-                }
-
-                var pattern = new InventorCircularPattern
-                {
-                    Name = p.Name,
-                    Count = (int)p.Count._Value,
-                    AngleRadians = p.Angle._Value,
-                    AxisPoint = axis.Value.point,
-                    AxisDir = axis.Value.dir,
-                };
-                AddSources(pattern, sources);
-                ir.Features.Add(pattern);
+                return;
             }
+
+            var pattern = new InventorCircularPattern
+            {
+                Name = p.Name,
+                Count = (int)p.Count._Value,
+                AngleRadians = p.Angle._Value,
+                AxisPoint = axis.Value.point,
+                AxisDir = axis.Value.dir,
+            };
+            AddSources(pattern, sources);
+            ir.Features.Add(pattern);
         }
 
-        private static void ExtractMirrors(MirrorFeatures mirrors, InventorDocument ir)
+        private static void ExtractOneMirror(MirrorFeature m, InventorDocument ir)
         {
-            for (int i = 1; i <= mirrors.Count; i++)
+            (double[] origin, double[] normal)? plane = ResolvePlane(m.MirrorPlaneEntity);
+            if (plane == null || !TryResolveSources(m.ParentFeatures, ir, out var sources))
             {
-                MirrorFeature m = mirrors[i];
-                (double[] origin, double[] normal)? plane = ResolvePlane(m.MirrorPlaneEntity);
-                if (plane == null || !TryResolveSources(m.ParentFeatures, ir, out var sources))
-                {
-                    continue;
-                }
-
-                var mirror = new InventorMirror
-                {
-                    Name = m.Name,
-                    PlaneOrigin = plane.Value.origin,
-                    PlaneNormal = plane.Value.normal,
-                };
-                AddSources(mirror, sources);
-                ir.Features.Add(mirror);
+                return;
             }
+
+            var mirror = new InventorMirror
+            {
+                Name = m.Name,
+                PlaneOrigin = plane.Value.origin,
+                PlaneNormal = plane.Value.normal,
+            };
+            AddSources(mirror, sources);
+            ir.Features.Add(mirror);
         }
 
         // Maps a pattern's parent features (by name) to IR feature indices; fails if any is unknown.
@@ -365,42 +364,38 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
         private static double[] Sub(double[] a, double[] b) => new[] { a[0] - b[0], a[1] - b[1], a[2] - b[2] };
 
-        private static void ExtractRevolves(RevolveFeatures revolves, InventorDocument ir)
+        private static void ExtractOneRevolve(RevolveFeature rev, InventorDocument ir)
         {
-            for (int i = 1; i <= revolves.Count; i++)
+            int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)rev.Profile.Parent).Name);
+            if (sketchIndex < 0)
             {
-                RevolveFeature rev = revolves[i];
-                int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)rev.Profile.Parent).Name);
-                if (sketchIndex < 0)
-                {
-                    continue;
-                }
-
-                // Oblikovati revolves about a sketch centerline, so add the axis line to the profile
-                // sketch as a centerline (its 2D endpoints come straight from the axis). Record the
-                // centerline's line index so the recipe can name it explicitly — several revolves may
-                // share one sketch, and then "the sketch's single centerline" is ambiguous.
-                InventorSketch profileSketch = ir.Sketches[sketchIndex];
-                int axisLineIndex = CountLines(profileSketch); // the index the appended centerline takes
-                bool injected = InjectCenterline(profileSketch, rev._AxisEntity);
-                var revolve = new InventorRevolve
-                {
-                    Name = rev.Name,
-                    SketchIndex = sketchIndex,
-                    ProfileIndex = 0,
-                    Operation = ToOperation(rev.Operation),
-                    AngleRadians = rev.ExtentType == PartFeatureExtentEnum.kAngleExtent
-                        ? ((AngleExtent)rev.Extent).Angle._Value
-                        : 0, // full sweep
-                    AxisLineIndex = injected ? axisLineIndex : -1,
-                };
-                foreach (double[] seed in ProfileSeeds(rev.Profile))
-                {
-                    revolve.ProfileSeeds.Add(seed);
-                }
-
-                ir.Features.Add(revolve);
+                return;
             }
+
+            // Oblikovati revolves about a sketch centerline, so add the axis line to the profile
+            // sketch as a centerline (its 2D endpoints come straight from the axis). Record the
+            // centerline's line index so the recipe can name it explicitly — several revolves may
+            // share one sketch, and then "the sketch's single centerline" is ambiguous.
+            InventorSketch profileSketch = ir.Sketches[sketchIndex];
+            int axisLineIndex = CountLines(profileSketch); // the index the appended centerline takes
+            bool injected = InjectCenterline(profileSketch, rev._AxisEntity);
+            var revolve = new InventorRevolve
+            {
+                Name = rev.Name,
+                SketchIndex = sketchIndex,
+                ProfileIndex = 0,
+                Operation = ToOperation(rev.Operation),
+                AngleRadians = rev.ExtentType == PartFeatureExtentEnum.kAngleExtent
+                    ? ((AngleExtent)rev.Extent).Angle._Value
+                    : 0, // full sweep
+                AxisLineIndex = injected ? axisLineIndex : -1,
+            };
+            foreach (double[] seed in ProfileSeeds(rev.Profile))
+            {
+                revolve.ProfileSeeds.Add(seed);
+            }
+
+            ir.Features.Add(revolve);
         }
 
         // Adds the revolve axis to the profile sketch as a centerline line. Returns false (adds
@@ -478,57 +473,53 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
         }
 
-        private static void ExtractExtrudes(ExtrudeFeatures extrudes, InventorDocument ir)
+        private static void ExtractOneExtrude(ExtrudeFeature ext, InventorDocument ir)
         {
-            for (int i = 1; i <= extrudes.Count; i++)
+            PartFeatureExtent extent = ext.Definition.Extent;
+
+            int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)ext.Profile.Parent).Name);
+            if (sketchIndex < 0)
             {
-                ExtrudeFeature ext = extrudes[i];
-                PartFeatureExtent extent = ext.Definition.Extent;
-
-                int sketchIndex = SketchIndexOf(ir, ((PlanarSketch)ext.Profile.Parent).Name);
-                if (sketchIndex < 0)
-                {
-                    continue;
-                }
-
-                InventorExtrude? feature = null;
-                if (extent is DistanceExtent distance)
-                {
-                    feature = new InventorExtrude
-                    {
-                        ExtentKind = InventorExtentKind.Distance,
-                        Direction = ToDirection(distance.Direction),
-                        Distance = distance.Distance._Value,
-                    };
-                }
-                else if (extent is ThroughAllExtent through)
-                {
-                    // A through-all cut/join spans the existing material; the engine resolves the
-                    // span, so only the direction is needed. Dropping these was the biggest volume
-                    // gap (subtractive cuts vanished).
-                    feature = new InventorExtrude
-                    {
-                        ExtentKind = InventorExtentKind.ThroughAll,
-                        Direction = ToDirection(through.Direction),
-                    };
-                }
-
-                if (feature == null)
-                {
-                    continue; // to-face / from-to (need work-plane targets) are a later step
-                }
-
-                feature.Name = ext.Name;
-                feature.SketchIndex = sketchIndex;
-                feature.ProfileIndex = 0;
-                feature.Operation = ToOperation(ext.Operation);
-                foreach (double[] seed in ProfileSeeds(ext.Profile))
-                {
-                    feature.ProfileSeeds.Add(seed);
-                }
-
-                ir.Features.Add(feature);
+                return;
             }
+
+            InventorExtrude? feature = null;
+            if (extent is DistanceExtent distance)
+            {
+                feature = new InventorExtrude
+                {
+                    ExtentKind = InventorExtentKind.Distance,
+                    Direction = ToDirection(distance.Direction),
+                    Distance = distance.Distance._Value,
+                };
+            }
+            else if (extent is ThroughAllExtent through)
+            {
+                // A through-all cut/join spans the existing material; the engine resolves the
+                // span, so only the direction is needed. Dropping these was the biggest volume
+                // gap (subtractive cuts vanished).
+                feature = new InventorExtrude
+                {
+                    ExtentKind = InventorExtentKind.ThroughAll,
+                    Direction = ToDirection(through.Direction),
+                };
+            }
+
+            if (feature == null)
+            {
+                return; // to-face / from-to (need work-plane targets) are a later step
+            }
+
+            feature.Name = ext.Name;
+            feature.SketchIndex = sketchIndex;
+            feature.ProfileIndex = 0;
+            feature.Operation = ToOperation(ext.Operation);
+            foreach (double[] seed in ProfileSeeds(ext.Profile))
+            {
+                feature.ProfileSeeds.Add(seed);
+            }
+
+            ir.Features.Add(feature);
         }
 
         // One guaranteed-interior seed point (sketch cm) per region the feature's Profile
