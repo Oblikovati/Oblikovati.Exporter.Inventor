@@ -50,6 +50,24 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
 
         [Fact]
+        public void Fillet_on_a_closed_circular_edge_reads_its_circle_center_and_axis()
+        {
+            // A bore/boss rim: a full circle at z=5 centred on (2,1.5,5), axis +Z. It has no
+            // start/stop vertex, so it must be named by the circle centre + axis, not skipped.
+            var edges = new List<Edge>
+            {
+                new FakeCircularEdge(new double[] { 2, 1.5, 5 }, new double[] { 0, 0, 1 }),
+            };
+            var fillets = new List<FilletFeature> { new FakeFilletFeature("BoreFillet", 0.2, edges) };
+
+            var f = Assert.IsType<InventorFillet>(Extract(fillets: fillets).Features.Last());
+
+            InventorEdgeDescriptor e = Assert.Single(f.Edges);
+            Assert.Equal(new double[] { 2, 1.5, 5 }, e.Midpoint); // the circle centre
+            Assert.Equal(new double[] { 0, 0, 1 }, e.Direction);   // the circle axis
+        }
+
+        [Fact]
         public void Chamfer_reads_distance_and_its_edges()
         {
             var edges = new List<Edge> { new FakeBrepEdge(new double[] { 0, 0, 0 }, new double[] { 0, 0, 5 }) };

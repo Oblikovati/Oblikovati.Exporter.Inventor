@@ -10,8 +10,9 @@ namespace Oblikovati.Exporter.Inventor.Inv
     /// Reads a part's dress-up features (fillet/chamfer/shell) into the IR as ADR-0040 geometric
     /// descriptors: each selected edge becomes a midpoint+direction, each removed face a
     /// centroid+normal, which Oblikovati binds to the recomputed body. Straight edges are read
-    /// from their vertices; planar faces from their vertices (centroid) and their Plane geometry
-    /// (normal) — a non-planar face is skipped. Hole and draft extraction are a later step.
+    /// from their vertices; a closed circular edge (a bore/boss rim) from its circle centre+axis;
+    /// planar faces from their vertices (centroid) and their Plane geometry (normal) — a non-planar
+    /// face is skipped.
     /// </summary>
     public static class DressUpExtractor
     {
@@ -313,26 +314,58 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
             for (int i = 1; i <= edges.Count; i++)
             {
-                var e = (Edge)edges[i];
-                // A closed/curved edge (circle, full arc) has no start/stop vertex, so StartVertex
-                // is null. This descriptor is the straight-edge form (midpoint + direction from its
-                // endpoints), so skip a vertex-less edge rather than dereferencing null; curved-edge
-                // dress-ups are a later step.
-                Vertex startVertex = e.StartVertex;
-                Vertex stopVertex = e.StopVertex;
-                if (startVertex == null || stopVertex == null)
+                InventorEdgeDescriptor? d = EdgeDescriptor((Edge)edges[i]);
+                if (d != null)
                 {
-                    continue;
+                    target.Add(d);
                 }
-
-                double[] a = P3(startVertex.Point);
-                double[] b = P3(stopVertex.Point);
-                target.Add(new InventorEdgeDescriptor
-                {
-                    Midpoint = new[] { (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2 },
-                    Direction = Normalize(new[] { b[0] - a[0], b[1] - a[1], b[2] - a[2] }),
-                });
             }
+        }
+
+        // A straight edge is described by its endpoint chord (midpoint + direction). A closed
+        // circular edge (a bore/boss rim) has no start/stop vertex, so it is described by its
+        // circle centre + axis instead — the form the reader's closedCircleOf resolves; without
+        // this a fillet/chamfer on a bore was silently dropped. Any other vertex-less edge (a full
+        // ellipse/spline) still can't be named, so it is skipped.
+        private static InventorEdgeDescriptor? EdgeDescriptor(Edge e)
+        {
+            Vertex startVertex = e.StartVertex;
+            Vertex stopVertex = e.StopVertex;
+            if (startVertex == null || stopVertex == null)
+            {
+                return CircularDescriptor(e);
+            }
+
+            double[] a = P3(startVertex.Point);
+            double[] b = P3(stopVertex.Point);
+            return new InventorEdgeDescriptor
+            {
+                Midpoint = new[] { (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2 },
+                Direction = Normalize(new[] { b[0] - a[0], b[1] - a[1], b[2] - a[2] }),
+            };
+        }
+
+        // The centre+axis descriptor of a closed circular edge. Edge.Geometry is a Circle for a
+        // full-circle rim; its Center is the representative point and its Normal the (sign-agnostic)
+        // axis. Returns null for a non-circular vertex-less edge or if Inventor won't yield the curve.
+        private static InventorEdgeDescriptor? CircularDescriptor(Edge e)
+        {
+            Circle? circle;
+            try
+            {
+                circle = e.Geometry as Circle;
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                return null;
+            }
+
+            if (circle == null)
+            {
+                return null;
+            }
+
+            return new InventorEdgeDescriptor { Midpoint = P3(circle.Center), Direction = V(circle.Normal) };
         }
 
         // A planar face's centroid (its vertices' average) and outward normal (its Plane). Returns

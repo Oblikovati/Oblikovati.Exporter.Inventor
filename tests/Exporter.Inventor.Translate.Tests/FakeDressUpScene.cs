@@ -153,6 +153,30 @@ namespace Oblikovati.Exporter.Inventor.Tests
         public override Point Point => _point;
     }
 
+    /// <summary>A closed circular B-rep edge (a bore/boss rim): no start/stop vertex, its Geometry
+    /// is a Circle carrying the centre + axis the descriptor is named by.</summary>
+    public sealed class FakeCircularEdge : Edge
+    {
+        private readonly Circle _circle;
+        public FakeCircularEdge(double[] center, double[] axis) => _circle = new FakeCircle(center, axis);
+        public override Vertex StartVertex => null!; // a full circle has no vertices
+        public override Vertex StopVertex => null!;
+        public override object Geometry => _circle;
+    }
+
+    public sealed class FakeCircle : Circle
+    {
+        private readonly Point _center;
+        private readonly UnitVector _normal;
+        public FakeCircle(double[] center, double[] axis)
+        {
+            _center = new FakePoint(center[0], center[1], center[2]);
+            _normal = new FakeUnitVector(axis[0], axis[1], axis[2]);
+        }
+        public override Point Center => _center;
+        public override UnitVector Normal => _normal;
+    }
+
     /// <summary>A planar B-rep face: corner vertices (centroid) + a plane normal.</summary>
     public sealed class FakePlanarFace : Face
     {
