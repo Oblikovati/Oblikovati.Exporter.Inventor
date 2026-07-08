@@ -23,40 +23,14 @@ namespace Oblikovati.Exporter.Inventor.Emit
             if (!hostSketch.HasValue)
                 return false; // sketch deferred; reason already on the report
 
-            int profileIndex = await ResolveProfileAsync(context, extrude, hostSketch.Value, cancellationToken).ConfigureAwait(false);
+            int profileIndex = await ProfileResolver.ResolveAsync(context, extrude.SketchIndex, hostSketch.Value,
+                extrude.ProfileSeeds, extrude.ProfileIndex, cancellationToken).ConfigureAwait(false);
             await context.Bridge.CallToolAsync("add_feature", new Dictionary<string, object?>
             {
                 ["kind"] = "extrude",
                 ["args"] = ExtrudeArgs(hostSketch.Value, profileIndex, extrude),
             }, cancellationToken).ConfigureAwait(false);
             return true;
-        }
-
-        // Resolves the profile against the live-solved regions: by seed containment when the IR
-        // carries a seed, else by the IR's precomputed index (validated against the solved set).
-        private static async Task<int> ResolveProfileAsync(EmitContext context, InventorExtrude extrude, int hostSketch, CancellationToken ct)
-        {
-            var result = await context.Bridge.CallToolAsync("list_sketch_profiles",
-                new Dictionary<string, object?> { ["sketchIndex"] = hostSketch }, ct).ConfigureAwait(false);
-            IReadOnlyList<LiveProfile> profiles = ProfileList.Parse(result);
-            if (extrude.ProfileSeeds.Count == 0)
-                return ProfileSelector.SelectByIndex(profiles, extrude.ProfileIndex);
-            return SelectBySeed(context.Document.Sketches[extrude.SketchIndex], extrude, profiles);
-        }
-
-        // Matches the seed's region (computed from the authored geometry) to a live profile; if the
-        // geometry is not resolvable in this slice, falls back to the precomputed index.
-        private static int SelectBySeed(InventorSketch sketch, InventorExtrude extrude, IReadOnlyList<LiveProfile> profiles)
-        {
-            try
-            {
-                RegionKey target = SketchGeometry.RegionForSeed(sketch, extrude.ProfileSeeds[0]);
-                return ProfileSelector.SelectByRegion(profiles, target);
-            }
-            catch (InvalidOperationException)
-            {
-                return ProfileSelector.SelectByIndex(profiles, extrude.ProfileIndex);
-            }
         }
 
         private static Dictionary<string, object?> ExtrudeArgs(int sketchIndex, int profileIndex, InventorExtrude extrude)

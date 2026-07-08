@@ -27,8 +27,8 @@ namespace Oblikovati.Exporter.Inventor.Emit
     {
         private readonly IReadOnlyList<IFeatureEmitter> _emitters;
 
-        /// <summary>Uses the default emitter set (extrude only, this slice).</summary>
-        public DocumentEmitter() : this(new IFeatureEmitter[] { new ExtrudeEmitter() })
+        /// <summary>Uses the default emitter set (extrude + revolve).</summary>
+        public DocumentEmitter() : this(new IFeatureEmitter[] { new ExtrudeEmitter(), new RevolveEmitter() })
         {
         }
 

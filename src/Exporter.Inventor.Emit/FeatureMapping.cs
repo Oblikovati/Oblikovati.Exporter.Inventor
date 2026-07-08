@@ -61,6 +61,19 @@ namespace Oblikovati.Exporter.Inventor.Emit
         public static string Degrees(double radians) =>
             Invariant(radians * 180.0 / Math.PI) + " deg";
 
+        /// <summary>
+        /// Maps a revolve's swept angle (radians) to its degree expression. A 0 angle — or a full
+        /// 2π — is a full revolution and maps to "360 deg" (the IR encodes a full revolve as 0, and
+        /// an extractor may equally hand back 2π; both mean the same solid).
+        /// </summary>
+        public static string RevolveAngle(double radians)
+        {
+            const double twoPi = 2.0 * Math.PI;
+            if (Math.Abs(radians) < 1e-9 || Math.Abs(Math.Abs(radians) - twoPi) < 1e-9)
+                return "360 deg";
+            return Degrees(radians);
+        }
+
         // Trims trailing zeros so 50 renders "50", 58.42920367 renders in full; invariant so a
         // comma-locale runner never emits "50,5 mm" (the host parses invariant-decimal).
         private static string Invariant(double value) =>

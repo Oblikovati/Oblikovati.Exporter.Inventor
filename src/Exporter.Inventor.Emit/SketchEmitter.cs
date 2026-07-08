@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
-using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Oblikovati.Exporter.Inventor.Bridge;
@@ -27,22 +27,19 @@ namespace Oblikovati.Exporter.Inventor.Emit
 
         /// <summary>
         /// Creates the sketch and emits its curves; returns the host sketch index. Returns null (a
-        /// deferral) when the sketch is not on an axis-aligned origin plane, or a curve kind is not
-        /// yet supported.
+        /// deferral) when the sketch's plane can be mapped to neither an origin plane nor a
+        /// fixed-frame work plane, or a curve kind is not yet supported.
         /// </summary>
         public async Task<int?> EmitAsync(InventorSketch sketch, IList<string> deferrals, CancellationToken ct)
         {
-            if (!PlaneMapper.TryMapOriginPlane(sketch, out string plane))
-            {
-                deferrals.Add($"sketch '{sketch.Name}' is not on an origin plane (offset/tilted work plane) — deferred.");
+            int? index = await CreateSketchHostAsync(sketch, deferrals, ct).ConfigureAwait(false);
+            if (!index.HasValue)
                 return null;
-            }
-            int index = await CreateAsync(plane, ct).ConfigureAwait(false);
             foreach (InventorCurve curve in sketch.Curves)
             {
                 if (curve.Centerline)
                     continue; // an axis, not profile geometry
-                if (!await EmitCurveAsync(index, curve, ct).ConfigureAwait(false))
+                if (!await EmitCurveAsync(index.Value, curve, ct).ConfigureAwait(false))
                 {
                     deferrals.Add($"sketch '{sketch.Name}' curve kind {curve.Kind} is not supported in this slice — deferred.");
                     return null;
@@ -51,12 +48,51 @@ namespace Oblikovati.Exporter.Inventor.Emit
             return index;
         }
 
-        private async Task<int> CreateAsync(string plane, CancellationToken ct)
+        // Creates the host sketch on the mapped plane: the fast path is an axis-aligned origin plane
+        // (create_sketch {plane}); otherwise the sketch's datum frame is authored as a fixed-frame
+        // work plane (create_work_plane) and the sketch is created on it (create_sketch
+        // {workPlaneIndex}). A datum frame that maps to neither is deferred.
+        private async Task<int?> CreateSketchHostAsync(InventorSketch sketch, IList<string> deferrals, CancellationToken ct)
+        {
+            if (PlaneMapper.TryMapOriginPlane(sketch, out string plane))
+                return await CreateOnOriginPlaneAsync(plane, ct).ConfigureAwait(false);
+            if (WorkPlaneMapper.TryMap(sketch, out WorkPlaneSpec spec))
+                return await CreateOnWorkPlaneAsync(sketch, spec, deferrals, ct).ConfigureAwait(false);
+            deferrals.Add($"sketch '{sketch.Name}' plane is neither an origin plane nor a mappable work plane — deferred.");
+            return null;
+        }
+
+        private async Task<int> CreateOnOriginPlaneAsync(string plane, CancellationToken ct)
         {
             var result = await _bridge.CallToolAsync("create_sketch",
                 new Dictionary<string, object?> { ["plane"] = plane }, ct).ConfigureAwait(false);
-            return result.TryGetProperty("sketchIndex", out var v) && v.TryGetInt32(out int i) ? i : 0;
+            return SketchIndexOf(result);
         }
+
+        // Authors the datum as a fixed-frame work plane, then a sketch on it. An unhealthy work
+        // plane (the constructor could not satisfy the frame) is deferred rather than sketched on.
+        private async Task<int?> CreateOnWorkPlaneAsync(InventorSketch sketch, WorkPlaneSpec spec, IList<string> deferrals, CancellationToken ct)
+        {
+            var wp = await _bridge.CallToolAsync("create_work_plane", new Dictionary<string, object?>
+            {
+                ["kind"] = spec.Kind,
+                ["origin"] = spec.Origin,
+                ["xaxis"] = spec.XAxis,
+                ["yaxis"] = spec.YAxis,
+            }, ct).ConfigureAwait(false);
+            if (!wp.TryGetProperty("healthy", out var h) || h.ValueKind != JsonValueKind.True ||
+                !wp.TryGetProperty("index", out var wi) || !wi.TryGetInt32(out int workPlaneIndex))
+            {
+                deferrals.Add($"sketch '{sketch.Name}' work plane could not be built (unhealthy fixed frame) — deferred.");
+                return null;
+            }
+            var result = await _bridge.CallToolAsync("create_sketch",
+                new Dictionary<string, object?> { ["workPlaneIndex"] = workPlaneIndex }, ct).ConfigureAwait(false);
+            return SketchIndexOf(result);
+        }
+
+        private static int SketchIndexOf(JsonElement result) =>
+            result.TryGetProperty("sketchIndex", out var v) && v.TryGetInt32(out int i) ? i : 0;
 
         // Emits line/circle/arc; returns false for a kind this slice does not author.
         private async Task<bool> EmitCurveAsync(int sketchIndex, InventorCurve curve, CancellationToken ct)

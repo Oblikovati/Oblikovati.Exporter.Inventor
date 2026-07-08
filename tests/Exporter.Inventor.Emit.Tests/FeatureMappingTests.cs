@@ -43,5 +43,19 @@ namespace Oblikovati.Exporter.Inventor.Emit.Tests
         {
             Assert.Equal("3 deg", FeatureMapping.Degrees(3.0 * Math.PI / 180.0));
         }
+
+        [Fact]
+        public void Maps_a_zero_or_full_revolve_angle_to_360_degrees()
+        {
+            Assert.Equal("360 deg", FeatureMapping.RevolveAngle(0.0));
+            Assert.Equal("360 deg", FeatureMapping.RevolveAngle(2.0 * Math.PI));
+        }
+
+        [Fact]
+        public void Maps_a_partial_revolve_angle_to_its_degrees()
+        {
+            Assert.Equal("90 deg", FeatureMapping.RevolveAngle(Math.PI / 2.0));
+            Assert.Equal("45 deg", FeatureMapping.RevolveAngle(Math.PI / 4.0));
+        }
     }
 }
