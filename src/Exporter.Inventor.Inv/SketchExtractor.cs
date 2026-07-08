@@ -243,11 +243,17 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     Id = id,
                     Kind = InventorCurveKind.EllipticalArc,
                     Center = P2(arc.CenterSketchPoint.Geometry),
+                    // The endpoints are the source of truth for closure: the emitter derives the
+                    // parametric angles FROM them (not from Inventor's StartAngle/SweepAngle, whose
+                    // convention need not match the host's), so the host reproduces exactly these
+                    // points and the loop welds to the adjacent curves.
+                    Start = P2(arc.StartSketchPoint.Geometry),
+                    End = P2(arc.EndSketchPoint.Geometry),
                     MajorAxis = new[] { major.X, major.Y },
                     MajorRadius = arc.MajorRadius,
                     MinorRadius = arc.MinorRadius,
                     StartAngle = arc.StartAngle,
-                    EndAngle = arc.StartAngle + arc.SweepAngle, // Inventor gives start + included sweep
+                    EndAngle = arc.StartAngle + arc.SweepAngle, // sign encodes sweep direction (CCW/CW)
                     Construction = arc.Construction,
                 });
                 curveIds[arc] = id;

@@ -125,7 +125,10 @@ namespace Oblikovati.Exporter.Inventor.Emit
 
         // Authors an ellipse or elliptical arc: centre + major-axis direction + the two radii, and
         // (for the arc) the sweep bounds. Radii are cm in the IR → millimetre expressions; angles
-        // are radians → degree expressions, the forms the host schema parses.
+        // are radians → degree expressions, the forms the host schema parses. The arc's angles are
+        // derived from its ENDPOINTS (see ArcAngles) so the host reproduces those exact points and
+        // the loop closes against the adjacent curves — the sketch node-merge tolerance is 1e-6 cm,
+        // far tighter than an angle-convention round-trip would guarantee.
         private async Task AddConicAsync(int sketchIndex, string kind, InventorCurve curve, CancellationToken ct)
         {
             var args = new Dictionary<string, object?>
@@ -139,12 +142,47 @@ namespace Oblikovati.Exporter.Inventor.Emit
             };
             if (kind == "ellipticalArc")
             {
-                args["startAngle"] = FeatureMapping.Degrees(curve.StartAngle);
-                args["endAngle"] = FeatureMapping.Degrees(curve.EndAngle);
+                (double start, double end) = ArcAngles(curve);
+                args["startAngle"] = FeatureMapping.Degrees(start);
+                args["endAngle"] = FeatureMapping.Degrees(end);
             }
             if (curve.Construction)
                 args["construction"] = true;
             await _bridge.CallToolAsync("add_sketch_entity", args, ct).ConfigureAwait(false);
+        }
+
+        // ArcAngles returns the host-frame parametric angles (radians) at the arc's start and end
+        // POINTS, spanning the same portion of the ellipse Inventor's arc did. Anchoring on the
+        // endpoints (rather than Inventor's own StartAngle/SweepAngle) makes the host's reconstructed
+        // endpoints coincide with the adjacent curves regardless of any angle-convention difference.
+        // Both endpoints leave two candidate sweeps (the minor and major arc); Inventor's sweep
+        // MAGNITUDE picks which, so a convention sign flip cannot select the wrong portion.
+        private static (double start, double end) ArcAngles(InventorCurve curve)
+        {
+            const double twoPi = 2.0 * System.Math.PI;
+            double start = EllipseAngle(curve.Start, curve);
+            double end = EllipseAngle(curve.End, curve);
+            double ccwDist = end - start;
+            while (ccwDist <= 0) ccwDist += twoPi; // CCW angular distance start→end, in (0, 2π]
+            double target = System.Math.Abs(curve.EndAngle - curve.StartAngle); // Inventor's swept magnitude
+            while (target > twoPi) target -= twoPi;
+            // Take the CCW arc when its span matches Inventor's magnitude better than the CW arc's.
+            if (System.Math.Abs(ccwDist - target) <= System.Math.Abs((twoPi - ccwDist) - target))
+                return (start, start + ccwDist);
+            return (start, start - (twoPi - ccwDist));
+        }
+
+        // EllipseAngle is the parametric angle a of point p on the ellipse, i.e. the a for which the
+        // host's point formula center + Rmaj·cos(a)·major + Rmin·sin(a)·minorPerp equals p, where
+        // minorPerp is major rotated +90°. a = atan2(v/Rmin, u/Rmaj) with (u,v) = p−center resolved
+        // onto (major, minorPerp).
+        private static double EllipseAngle(double[] p, InventorCurve curve)
+        {
+            double[] c = curve.Center, m = curve.MajorAxis;
+            double dx = p[0] - c[0], dy = p[1] - c[1];
+            double u = dx * m[0] + dy * m[1];    // along major
+            double v = -dx * m[1] + dy * m[0];   // along minorPerp (major rotated +90°)
+            return System.Math.Atan2(v / curve.MinorRadius, u / curve.MajorRadius);
         }
 
         // Authors a spline through its captured points. A FIT spline interpolates the points
