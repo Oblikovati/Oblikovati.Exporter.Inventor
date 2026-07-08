@@ -6,6 +6,7 @@
     <Project Path="src/Exporter.Inventor.Recipe/Exporter.Inventor.Recipe.csproj" />
     <Project Path="src/Exporter.Inventor.Translate/Exporter.Inventor.Translate.csproj" />
     <Project Path="src/Exporter.Inventor.Bridge/Exporter.Inventor.Bridge.csproj" />
+    <Project Path="src/Exporter.Inventor.Emit/Exporter.Inventor.Emit.csproj" />
   </Folder>
   <Folder Name="/stubs/">
     <Project Path="stubs/Inventor.Stubs/Inventor.Stubs.csproj" />
@@ -13,6 +14,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Exporter.Inventor.Translate.Tests/Exporter.Inventor.Translate.Tests.csproj" />
     <Project Path="tests/Exporter.Inventor.Bridge.Tests/Exporter.Inventor.Bridge.Tests.csproj" />
+    <Project Path="tests/Exporter.Inventor.Emit.Tests/Exporter.Inventor.Emit.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/GoldenGen/GoldenGen.csproj" />

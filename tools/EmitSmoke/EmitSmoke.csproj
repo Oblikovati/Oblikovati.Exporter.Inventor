@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Live acceptance driver for the B2 feature emitter (Exporter.Inventor.Emit). Deliberately
+       NOT part of the root solution: it requires a running bridge on 127.0.0.1:7800, which CI
+       cannot provide. It builds two Model IR fixtures (a 60 cm³ box; a box with a concentric bore)
+       through DocumentEmitter and asserts the measured volume of each. Run it by path against a
+       live host. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Tools.EmitSmoke</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Emit\Exporter.Inventor.Emit.csproj" />
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Bridge\Exporter.Inventor.Bridge.csproj" />
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Model\Exporter.Inventor.Model.csproj" />
+    <ProjectReference Include="..\Fixtures\Exporter.Inventor.Fixtures.csproj" />
+    <!-- Pull the MCP client's full runtime closure into this app's output (the netstandard2.0
+         Bridge does not otherwise flow every transitive runtime dep into a net app's deps.json). -->
+    <PackageReference Include="ModelContextProtocol.Core" Version="1.4.0" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+</Project>

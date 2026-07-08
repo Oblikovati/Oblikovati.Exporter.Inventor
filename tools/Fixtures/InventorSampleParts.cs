@@ -114,6 +114,43 @@ namespace Oblikovati.Exporter.Inventor.Fixtures
         }
 
         /// <summary>
+        /// The 4×3 cm rectangle with a CONCENTRIC Ø1.6 cm circle (r = 0.8 cm) at its centre
+        /// (2, 1.5), extruded 5 cm. The extrude selects the annular region by an interior seed at
+        /// (0.3, 0.3) — between the circle and the rectangle edge — so the profile is the box minus
+        /// the bore. Volume = (4·3 − π·0.8²)·5 = 60 − 3.2π ≈ 49.947 cm³ analytically (the host
+        /// tessellates the round hole into a 24-gon, so the measured solid runs a touch higher).
+        /// Exercises live inner-loop (hole) profile selection.
+        /// </summary>
+        public static InventorDocument BoxWithHolePart()
+        {
+            InventorDocument doc = RectanglePart();
+            doc.DisplayName = "box-with-hole";
+
+            InventorSketch sketch = doc.Sketches[0];
+            const long circle = 5;
+            sketch.Curves.Add(new InventorCurve
+            {
+                Id = circle,
+                Kind = InventorCurveKind.Circle,
+                Center = new double[] { 2, 1.5 },
+                Radius = 0.8,
+            });
+
+            var extrude = new InventorExtrude
+            {
+                Name = "Extrude1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = InventorOperation.NewBody,
+                Direction = InventorExtentDirection.Positive,
+                Distance = 5,
+            };
+            extrude.ProfileSeeds.Add(new double[] { 0.3, 0.3 }); // interior point of the annulus
+            doc.Features.Add(extrude);
+            return doc;
+        }
+
+        /// <summary>
         /// An offset square section revolved a full turn about its own centerline (the sketch's
         /// Y axis), making a washer/tube: R=4, r=2, h=2 cm → volume 24π ≈ 75.4 cm³.
         /// </summary>

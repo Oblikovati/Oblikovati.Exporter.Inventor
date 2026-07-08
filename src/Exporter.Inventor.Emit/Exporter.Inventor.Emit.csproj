@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Maps the Inventor-neutral Model IR onto live MCP bridge calls (the B2 feature emitter).
+       netstandard2.0 matches the Model IR so the same assembly loads under the .NET runtime an
+       Inventor add-in uses. It consumes only Model + Bridge; it never touches the Inventor API. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Emit</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.Inventor.Emit</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Exporter.Inventor.Model\Exporter.Inventor.Model.csproj" />
+    <ProjectReference Include="..\Exporter.Inventor.Bridge\Exporter.Inventor.Bridge.csproj" />
+    <!-- System.Text.Json (the JsonElement results the Bridge client returns) flows transitively
+         from the Bridge's ModelContextProtocol.Core reference; no direct reference needed. -->
+  </ItemGroup>
+
+</Project>

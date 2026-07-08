@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- CI-safe unit tests for the Emit project's PURE mapping logic (plane names, feature enums,
+       distance formatting, seed→region resolution, live-profile selection/parsing). No bridge
+       required, so these run in CI. The live end-to-end round trip lives in tools/EmitSmoke. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Emit.Tests</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.Inventor.Emit.Tests</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Emit\Exporter.Inventor.Emit.csproj" />
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Model\Exporter.Inventor.Model.csproj" />
+    <ProjectReference Include="..\..\tools\Fixtures\Exporter.Inventor.Fixtures.csproj" />
+  </ItemGroup>
+
+</Project>
