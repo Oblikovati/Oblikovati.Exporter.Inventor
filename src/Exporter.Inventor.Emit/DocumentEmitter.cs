@@ -27,8 +27,12 @@ namespace Oblikovati.Exporter.Inventor.Emit
     {
         private readonly IReadOnlyList<IFeatureEmitter> _emitters;
 
-        /// <summary>Uses the default emitter set (extrude + revolve).</summary>
-        public DocumentEmitter() : this(new IFeatureEmitter[] { new ExtrudeEmitter(), new RevolveEmitter() })
+        /// <summary>Uses the default emitter set (extrude, revolve, hole, and the dress-up kinds).</summary>
+        public DocumentEmitter() : this(new IFeatureEmitter[]
+        {
+            new ExtrudeEmitter(), new RevolveEmitter(), new HoleEmitter(),
+            new FilletEmitter(), new ChamferEmitter(), new ShellEmitter(), new DraftEmitter(),
+        })
         {
         }
 
@@ -51,8 +55,13 @@ namespace Oblikovati.Exporter.Inventor.Emit
             report.DocumentId = await CreateDocumentAsync(bridge, report.DocumentName, cancellationToken).ConfigureAwait(false);
 
             var context = new EmitContext(bridge, document, report);
-            foreach (InventorFeature feature in document.Features)
-                await EmitFeatureAsync(context, feature, report, cancellationToken).ConfigureAwait(false);
+            for (int i = 0; i < document.Features.Count; i++)
+            {
+                // Track the IR feature index so a created feature's host name is recorded against it
+                // (a later pattern/mirror references its sources by IR index).
+                context.CurrentFeatureIndex = i;
+                await EmitFeatureAsync(context, document.Features[i], report, cancellationToken).ConfigureAwait(false);
+            }
             return report;
         }
 

@@ -25,11 +25,7 @@ namespace Oblikovati.Exporter.Inventor.Emit
 
             int profileIndex = await ProfileResolver.ResolveAsync(context, extrude.SketchIndex, hostSketch.Value,
                 extrude.ProfileSeeds, extrude.ProfileIndex, cancellationToken).ConfigureAwait(false);
-            await context.Bridge.CallToolAsync("add_feature", new Dictionary<string, object?>
-            {
-                ["kind"] = "extrude",
-                ["args"] = ExtrudeArgs(hostSketch.Value, profileIndex, extrude),
-            }, cancellationToken).ConfigureAwait(false);
+            await context.AddFeatureAsync("extrude", ExtrudeArgs(hostSketch.Value, profileIndex, extrude), cancellationToken).ConfigureAwait(false);
             return true;
         }
 

@@ -20,6 +20,7 @@ namespace Oblikovati.Exporter.Inventor.Emit
     {
         private readonly SketchEmitter _sketchEmitter;
         private readonly Dictionary<int, int?> _hostSketchByIr = new Dictionary<int, int?>();
+        private readonly Dictionary<int, string> _hostFeatureNameByIr = new Dictionary<int, string>();
 
         public EmitContext(BridgeClient bridge, InventorDocument document, EmitReport report)
         {
@@ -34,6 +35,52 @@ namespace Oblikovati.Exporter.Inventor.Emit
         public InventorDocument Document { get; }
 
         public EmitReport Report { get; }
+
+        /// <summary>
+        /// The index (into <see cref="Model.InventorDocument.Features"/>) of the feature currently
+        /// being emitted. <see cref="DocumentEmitter"/> sets it before each emit so a created feature's
+        /// host name can be recorded against its IR index (for a later pattern/mirror to reference).
+        /// -1 ⇒ not tracking (e.g. a helper feature).
+        /// </summary>
+        public int CurrentFeatureIndex { get; set; } = -1;
+
+        /// <summary>
+        /// Adds a feature via the <c>add_feature</c> tool and returns the host's parsed reply. Records
+        /// the created feature's name against <see cref="CurrentFeatureIndex"/> (so a pattern can name
+        /// it later) and, when the host reports the feature unhealthy, appends the reason to
+        /// <see cref="EmitReport.Warnings"/> — the emitter stays thin, one place owns the reply.
+        /// </summary>
+        public async Task<FeatureAddResult> AddFeatureAsync(string kind, IReadOnlyDictionary<string, object?> args, CancellationToken ct)
+        {
+            System.Text.Json.JsonElement raw = await Bridge.CallToolAsync("add_feature", new Dictionary<string, object?>
+            {
+                ["kind"] = kind,
+                ["args"] = args,
+            }, ct).ConfigureAwait(false);
+            FeatureAddResult result = FeatureAddResult.Parse(raw);
+            if (CurrentFeatureIndex >= 0 && result.Name.Length > 0)
+                _hostFeatureNameByIr[CurrentFeatureIndex] = result.Name;
+            if (!result.Healthy)
+                Report.Warnings.Add($"feature '{result.Name}' ({kind}) is unhealthy: {result.Reason}");
+            return result;
+        }
+
+        /// <summary>
+        /// Resolves IR feature indices (a replicating feature's sources) to the host feature names
+        /// recorded when they were emitted. Returns null when any source was not emitted (deferred),
+        /// so the caller defers the replicating feature rather than pattern a phantom.
+        /// </summary>
+        public IReadOnlyList<string>? HostFeatureNames(IEnumerable<int> irFeatureIndices)
+        {
+            var names = new List<string>();
+            foreach (int i in irFeatureIndices)
+            {
+                if (!_hostFeatureNameByIr.TryGetValue(i, out string? name))
+                    return null;
+                names.Add(name);
+            }
+            return names;
+        }
 
         /// <summary>
         /// Returns the host sketch index for the given IR sketch, authoring it on first use. Returns

@@ -31,6 +31,29 @@ namespace Oblikovati.Exporter.Inventor.Emit
             return TryOriginAxis(sketch, axis, out axisRef);
         }
 
+        /// <summary>
+        /// Resolves the revolve's axis to a model-space line (origin + unit direction, cm) for any
+        /// centerline — including offset/tilted ones a global origin axis cannot express. The caller
+        /// builds a grounded work axis from it via <c>create_work_axis</c>. False ⇒ the axis line is
+        /// absent or degenerate (still defer).
+        /// </summary>
+        public static bool TryModelAxis(InventorSketch sketch, InventorRevolve revolve, out double[] origin, out double[] direction)
+        {
+            origin = Array.Empty<double>();
+            direction = Array.Empty<double>();
+            if (sketch == null) throw new ArgumentNullException(nameof(sketch));
+            if (revolve == null) throw new ArgumentNullException(nameof(revolve));
+            if (!TryAxisCurve(sketch, revolve, out InventorCurve axis))
+                return false;
+            double[] p0 = ToModel(sketch, axis.Start);
+            double[] p1 = ToModel(sketch, axis.End);
+            if (!TryDirection(p0, p1, out double[] dir))
+                return false;
+            origin = p0;
+            direction = dir;
+            return true;
+        }
+
         // Selects THIS revolve's axis line: the injected centerline at AxisLineIndex (the index among
         // the sketch's line-kind curves, matching the reader's Lines() order) when several revolves
         // share a sketch, else the sketch's single centerline. Ambiguous/absent ⇒ false.

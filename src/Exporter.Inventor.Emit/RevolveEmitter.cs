@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Oblikovati.Exporter.Inventor.Model;
@@ -8,10 +9,11 @@ using Oblikovati.Exporter.Inventor.Model;
 namespace Oblikovati.Exporter.Inventor.Emit
 {
     /// <summary>
-    /// Emits an <see cref="InventorRevolve"/>: maps its axis to an origin work-axis ref, authors its
-    /// profile sketch, resolves the target profile LIVE against the solved regions, and adds a
-    /// <c>revolve</c> feature. A revolve whose axis is not a global origin axis is deferred (there is
-    /// no bridge tool to build a work axis from a sketch line — see <see cref="RevolveAxis"/>).
+    /// Emits an <see cref="InventorRevolve"/>: maps its axis to a work-axis ref, authors its profile
+    /// sketch, resolves the target profile LIVE against the solved regions, and adds a <c>revolve</c>
+    /// feature. A global origin centerline maps to an origin-axis ref directly; an offset/tilted
+    /// centerline is built as a grounded work axis via <c>create_work_axis</c> (line kind) and the
+    /// revolve turns about the returned ref. Deferred only when no axis line can be resolved at all.
     /// </summary>
     public sealed class RevolveEmitter : IFeatureEmitter
     {
@@ -21,10 +23,11 @@ namespace Oblikovati.Exporter.Inventor.Emit
         {
             var revolve = (InventorRevolve)feature;
             InventorSketch sketch = context.Document.Sketches[revolve.SketchIndex];
-            if (!RevolveAxis.TryResolve(sketch, revolve, out string axisRef))
+
+            string? axisRef = await ResolveAxisRefAsync(context, sketch, revolve, cancellationToken).ConfigureAwait(false);
+            if (axisRef == null)
             {
-                context.Report.Deferrals.Add(
-                    $"revolve '{revolve.Name}' axis is not a global origin axis (offset/tilted centerline) — deferred.");
+                context.Report.Deferrals.Add($"revolve '{revolve.Name}' has no resolvable axis centerline — deferred.");
                 return false;
             }
 
@@ -34,12 +37,38 @@ namespace Oblikovati.Exporter.Inventor.Emit
 
             int profileIndex = await ProfileResolver.ResolveAsync(context, revolve.SketchIndex, hostSketch.Value,
                 revolve.ProfileSeeds, revolve.ProfileIndex, cancellationToken).ConfigureAwait(false);
-            await context.Bridge.CallToolAsync("add_feature", new Dictionary<string, object?>
-            {
-                ["kind"] = "revolve",
-                ["args"] = RevolveArgs(hostSketch.Value, profileIndex, revolve, axisRef),
-            }, cancellationToken).ConfigureAwait(false);
+            await context.AddFeatureAsync("revolve", RevolveArgs(hostSketch.Value, profileIndex, revolve, axisRef), cancellationToken).ConfigureAwait(false);
             return true;
+        }
+
+        // An origin centerline maps straight to "origin/axis/x|y|z"; any other centerline is built as
+        // a grounded work axis from its model-space line. Null ⇒ no axis line resolved.
+        private static async Task<string?> ResolveAxisRefAsync(EmitContext context, InventorSketch sketch, InventorRevolve revolve, CancellationToken ct)
+        {
+            if (RevolveAxis.TryResolve(sketch, revolve, out string originRef))
+                return originRef;
+            if (RevolveAxis.TryModelAxis(sketch, revolve, out double[] origin, out double[] direction))
+                return await CreateWorkAxisAsync(context, origin, direction, ct).ConfigureAwait(false);
+            return null;
+        }
+
+        // Builds a grounded (line-kind) work axis from origin + direction and returns its ref
+        // (e.g. "axis/1"); null when the host reports no usable ref.
+        private static async Task<string?> CreateWorkAxisAsync(EmitContext context, double[] origin, double[] direction, CancellationToken ct)
+        {
+            JsonElement result = await context.Bridge.CallToolAsync("create_work_axis", new Dictionary<string, object?>
+            {
+                ["kind"] = "line",
+                ["origin"] = origin,
+                ["direction"] = direction,
+            }, ct).ConfigureAwait(false);
+            if (result.ValueKind == JsonValueKind.Object && result.TryGetProperty("ref", out JsonElement r) &&
+                r.ValueKind == JsonValueKind.String)
+            {
+                string s = r.GetString() ?? string.Empty;
+                return s.Length == 0 ? null : s;
+            }
+            return null;
         }
 
         private static Dictionary<string, object?> RevolveArgs(int sketchIndex, int profileIndex, InventorRevolve revolve, string axisRef) =>
