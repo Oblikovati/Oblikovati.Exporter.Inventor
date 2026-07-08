@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Oblikovati recipe POCOs + the YAML emitter seam. Mirrors the .opd/.oad schema
+       (model/compdef/serialize.go in the Oblikovati repo) and is the source of truth
+       for the file shape this exporter emits. Host-neutral: no Inventor dependency. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Recipe</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.Inventor.Recipe</AssemblyName>
+  </PropertyGroup>
+
+  <!-- YamlDotNet is wrapped behind IRecipeWriter (CLAUDE.md: thin interface over
+       third-party libs) so callers never see YamlDotNet types. -->
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+</Project>

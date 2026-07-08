@@ -1,0 +1,123 @@
+// SPDX-License-Identifier: GPL-2.0-only
+using System.Collections.Generic;
+using Oblikovati.Exporter.Inventor.Model;
+using Oblikovati.Exporter.Inventor.Recipe;
+
+namespace Oblikovati.Exporter.Inventor.Translate
+{
+    /// <summary>
+    /// Maps the Inventor-neutral IR (<see cref="InventorDocument"/>) to a serializable
+    /// Oblikovati recipe (<see cref="OblikovatiDocument"/>). Pure and host-free; the
+    /// translation registry (sketches, features, datums…) grows on this seam in later
+    /// milestones. For now it carries the envelope, units, and model parameters.
+    /// </summary>
+    public sealed class DocumentTranslator
+    {
+        /// <summary>
+        /// Translates <paramref name="source"/> into a recipe, appending anything it cannot
+        /// carry to <paramref name="report"/>.
+        ///
+        /// Example:
+        /// <code>
+        /// var recipe = new DocumentTranslator().Translate(doc, new ExportReport());
+        /// </code>
+        /// </summary>
+        public OblikovatiDocument Translate(InventorDocument source, ExportReport report)
+        {
+            if (source.Kind != InventorDocumentKind.Part)
+            {
+                throw new System.NotSupportedException(
+                    $"document kind '{source.Kind}' is not a part; assemblies go through DocumentExporter");
+            }
+
+            var part = new PartRecipe();
+            part.Units.Length = source.LengthUnit;
+            part.Units.Angle = source.AngleUnit;
+            TranslateParameters(source, part);
+            TranslateWorkPlanes(source, part);
+            TranslateSketches(source, part, report);
+            TranslateFeatures(source, part, report);
+
+            return new OblikovatiDocument
+            {
+                DocumentType = (int)InventorDocumentKind.Part,
+                DisplayName = source.DisplayName,
+                Model = part,
+            };
+        }
+
+        /// <summary>
+        /// Builds an assembly document from its display info and the already-resolved occurrences
+        /// (their component file names supplied by the tree walk in <see cref="DocumentExporter"/>).
+        /// </summary>
+        public OblikovatiDocument TranslateAssembly(InventorDocument source, IReadOnlyList<OccurrenceData> occurrences)
+        {
+            var recipe = new AssemblyRecipe
+            {
+                Units = new Units { Length = source.LengthUnit, Angle = source.AngleUnit },
+            };
+            foreach (OccurrenceData occurrence in occurrences)
+            {
+                recipe.Occurrences.Add(occurrence);
+            }
+
+            return new OblikovatiDocument
+            {
+                DocumentType = (int)InventorDocumentKind.Assembly,
+                DisplayName = source.DisplayName,
+                Model = recipe,
+            };
+        }
+
+        private static void TranslateParameters(InventorDocument source, PartRecipe part)
+        {
+            foreach (InventorParameter p in source.Parameters)
+            {
+                part.Parameters.Add(new ParameterRecipe
+                {
+                    Name = p.Name,
+                    Kind = "model",
+                    Expression = p.Expression,
+                });
+            }
+        }
+
+        private static void TranslateWorkPlanes(InventorDocument source, PartRecipe part)
+        {
+            foreach (InventorWorkPlane plane in source.WorkPlanes)
+            {
+                part.WorkFeatures.Add(WorkPlaneTranslator.Translate(plane));
+            }
+        }
+
+        // Sketches, their points and entities share one id space (matches the Go codec, where a
+        // sketch's id precedes its points' and entities' ids), so one allocator threads through.
+        private static void TranslateSketches(InventorDocument source, PartRecipe part, ExportReport report)
+        {
+            var ids = new IdAllocator();
+            var translator = new SketchTranslator(ids, report);
+            foreach (InventorSketch sketch in source.Sketches)
+            {
+                int sketchId = ids.Next();
+                part.Sketches.Add(translator.Translate(sketch, sketchId));
+            }
+        }
+
+        // Map each IR feature index to its recipe index so patterns/mirror can remap their source
+        // program indices, skipping over any feature that was itself not translated.
+        private static void TranslateFeatures(InventorDocument source, PartRecipe part, ExportReport report)
+        {
+            var translator = new FeatureTranslator(report);
+            var sourceIndex = new Dictionary<int, int>();
+            for (int i = 0; i < source.Features.Count; i++)
+            {
+                FeatureData? translated = translator.Translate(source.Features[i], sourceIndex);
+                if (translated != null)
+                {
+                    sourceIndex[i] = part.Features.Count;
+                    part.Features.Add(translated);
+                }
+            }
+        }
+    }
+}
