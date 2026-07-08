@@ -31,11 +31,16 @@ namespace Oblikovati.Exporter.Inventor.Emit
                 return false;
             }
 
-            int? hostSketch = await context.EnsureSketchAsync(revolve.SketchIndex, cancellationToken).ConfigureAwait(false);
+            // Prefer authoring Inventor's actual resolved profile loops (see ExtrudeEmitter); the axis
+            // is resolved separately from the original sketch's centerline above, so it is unaffected.
+            bool useProfileLoops = revolve.ProfileLoops.Count > 0;
+            int? hostSketch = useProfileLoops
+                ? await context.EmitProfileSketchAsync(revolve.SketchIndex, revolve.ProfileLoops, cancellationToken).ConfigureAwait(false)
+                : await context.EnsureSketchAsync(revolve.SketchIndex, cancellationToken).ConfigureAwait(false);
             if (!hostSketch.HasValue)
                 return false; // sketch deferred; reason already on the report
 
-            int profileIndex = revolve.ProfileSeeds.Count > 0
+            int profileIndex = (useProfileLoops || revolve.ProfileSeeds.Count > 0)
                 ? revolve.ProfileIndex
                 : await ProfileResolver.ResolveAsync(context, revolve.SketchIndex, hostSketch.Value,
                     revolve.ProfileSeeds, revolve.ProfileIndex, cancellationToken).ConfigureAwait(false);

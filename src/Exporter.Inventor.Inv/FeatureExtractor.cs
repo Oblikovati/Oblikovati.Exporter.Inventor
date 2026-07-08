@@ -396,6 +396,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
 
             ir.Features.Add(revolve);
+            ProfileExtractor.Extract(rev, revolve);
         }
 
         // Adds the revolve axis to the profile sketch as a centerline line. Returns false (adds

@@ -16,11 +16,17 @@ namespace Oblikovati.Exporter.Inventor.Inv
     /// </summary>
     internal static class ProfileExtractor
     {
-        internal static void Extract(ExtrudeFeature ext, InventorExtrude ir)
+        internal static void Extract(ExtrudeFeature ext, InventorExtrude ir) =>
+            ExtractInto(ext.Profile, ir.ProfileLoops);
+
+        internal static void Extract(RevolveFeature rev, InventorRevolve ir) =>
+            ExtractInto(rev.Profile, ir.ProfileLoops);
+
+        private static void ExtractInto(Profile profile, System.Collections.Generic.IList<InventorProfileLoop> loops)
         {
             try
             {
-                foreach (ProfilePath path in ext.Profile)
+                foreach (ProfilePath path in profile)
                 {
                     var loop = new InventorProfileLoop
                     {
@@ -38,7 +44,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
                     if (loop.Curves.Count >= 1)
                     {
-                        ir.ProfileLoops.Add(loop);
+                        loops.Add(loop);
                     }
                 }
             }
@@ -46,7 +52,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 // The profile could not be read faithfully — leave ProfileLoops empty so the emitter
                 // falls back to the shared sketch + interior seed points. Never throw.
-                ir.ProfileLoops.Clear();
+                loops.Clear();
             }
         }
 

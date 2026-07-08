@@ -102,6 +102,13 @@ namespace Oblikovati.Exporter.Inventor.Model
         /// first; empty ⇒ fall back to the index.</summary>
         public System.Collections.Generic.IList<double[]> ProfileSeeds { get; } =
             new System.Collections.Generic.List<double[]>();
+
+        /// <summary>The revolve's selected profile as Inventor resolved it (Profile.ProfilePaths).
+        /// When non-empty the emitter authors these loops into a dedicated sketch and revolves about
+        /// the axis resolved from the original sketch's centerline. Empty ⇒ fall back to sketch +
+        /// seeds. See <see cref="InventorExtrude.ProfileLoops"/>.</summary>
+        public System.Collections.Generic.IList<InventorProfileLoop> ProfileLoops { get; } =
+            new System.Collections.Generic.List<InventorProfileLoop>();
     }
 
     /// <summary>
