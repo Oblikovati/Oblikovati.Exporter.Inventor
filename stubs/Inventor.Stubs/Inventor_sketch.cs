@@ -62,6 +62,8 @@ namespace Inventor
     /// <summary>Stub of one sketch line.</summary>
     public class SketchLine
     {
+        // Reference (projected) geometry; default false so only tests that opt in are treated as such.
+        public virtual bool Reference => false;
         public virtual SketchPoint StartSketchPoint => throw Stub.Error();
 
         public virtual SketchPoint EndSketchPoint => throw Stub.Error();
@@ -106,6 +108,7 @@ namespace Inventor
     /// </summary>
     public class SketchArc
     {
+        public virtual bool Reference => false;
         public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
 
         public virtual SketchPoint StartSketchPoint => throw Stub.Error();
@@ -125,6 +128,7 @@ namespace Inventor
     /// <summary>Stub of one sketch circle.</summary>
     public class SketchCircle
     {
+        public virtual bool Reference => false;
         public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
 
         public virtual double Radius => throw Stub.Error();
@@ -146,6 +150,7 @@ namespace Inventor
     /// </summary>
     public class SketchSpline
     {
+        public virtual bool Reference => false;
         public virtual int FitPointCount => throw Stub.Error();
 
         public virtual SketchPoint get_FitPoint(int index) => throw Stub.Error();
@@ -172,6 +177,7 @@ namespace Inventor
     /// </summary>
     public class SketchControlPointSpline
     {
+        public virtual bool Reference => false;
         public virtual int ControlPointCount => throw Stub.Error();
 
         public virtual SketchPoint get_ControlPoint(int index) => throw Stub.Error();
@@ -192,6 +198,7 @@ namespace Inventor
     /// <summary>Stub of one full sketch ellipse: center + major-axis direction + the two radii.</summary>
     public class SketchEllipse
     {
+        public virtual bool Reference => false;
         public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
 
         public virtual UnitVector2d MajorAxisVector => throw Stub.Error();
@@ -217,6 +224,7 @@ namespace Inventor
     /// </summary>
     public class SketchEllipticalArc
     {
+        public virtual bool Reference => false;
         public virtual SketchPoint CenterSketchPoint => throw Stub.Error();
 
         public virtual SketchPoint StartSketchPoint => throw Stub.Error();

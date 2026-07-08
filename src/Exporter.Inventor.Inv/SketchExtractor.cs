@@ -81,8 +81,16 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= lines.Count; i++)
             {
                 SketchLine line = lines[i];
-                // A projected reference line can carry null Start/End sketch points; it is not part
-                // of the sketch's own profile, so skip it rather than dereferencing null.
+                // Reference (projected) geometry is not part of the sketch's own profile — Inventor
+                // excludes it from profiles — so skip it, or Oblikovati would close it into a
+                // spurious region (e.g. a projected part outline becoming a big cut target). A
+                // revolve axis is injected separately (InjectCenterline), so this never drops one.
+                if (line.Reference)
+                {
+                    continue;
+                }
+                // A projected reference line can also carry null Start/End sketch points; skip it
+                // rather than dereferencing null.
                 SketchPoint start = line.StartSketchPoint;
                 SketchPoint end = line.EndSketchPoint;
                 if (start == null || end == null)
@@ -112,6 +120,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= circles.Count; i++)
             {
                 SketchCircle circle = circles[i];
+                if (circle.Reference) continue; // projected reference geometry: not a profile boundary
                 long id = nextId++;
                 result.Curves.Add(new InventorCurve
                 {
@@ -133,6 +142,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= arcs.Count; i++)
             {
                 SketchArc arc = arcs[i];
+                if (arc.Reference) continue; // projected reference geometry: not a profile boundary
                 long id = nextId++;
                 result.Curves.Add(new InventorCurve
                 {
@@ -158,6 +168,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= splines.Count; i++)
             {
                 SketchSpline spline = splines[i];
+                if (spline.Reference) continue; // projected reference geometry: not a profile boundary
                 long id = nextId++;
                 var curve = new InventorCurve
                 {
@@ -185,6 +196,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= splines.Count; i++)
             {
                 SketchControlPointSpline spline = splines[i];
+                if (spline.Reference) continue; // projected reference geometry: not a profile boundary
                 long id = nextId++;
                 var curve = new InventorCurve
                 {
@@ -212,6 +224,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= ellipses.Count; i++)
             {
                 SketchEllipse ellipse = ellipses[i];
+                if (ellipse.Reference) continue; // projected reference geometry: not a profile boundary
                 long id = nextId++;
                 UnitVector2d major = ellipse.MajorAxisVector;
                 result.Curves.Add(new InventorCurve
@@ -236,6 +249,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
             for (int i = 1; i <= arcs.Count; i++)
             {
                 SketchEllipticalArc arc = arcs[i];
+                if (arc.Reference) continue; // projected reference geometry: not a profile boundary
                 long id = nextId++;
                 UnitVector2d major = arc.MajorAxisVector;
                 result.Curves.Add(new InventorCurve
