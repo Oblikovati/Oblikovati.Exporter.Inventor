@@ -109,9 +109,59 @@ namespace Oblikovati.Exporter.Inventor.Emit
                 case InventorCurveKind.Arc:
                     await AddEntityAsync(sketchIndex, "arc", new[] { curve.Center, curve.Start, curve.End }, curve, null, ct).ConfigureAwait(false);
                     return true;
+                case InventorCurveKind.Ellipse:
+                    await AddConicAsync(sketchIndex, "ellipse", curve, ct).ConfigureAwait(false);
+                    return true;
+                case InventorCurveKind.EllipticalArc:
+                    await AddConicAsync(sketchIndex, "ellipticalArc", curve, ct).ConfigureAwait(false);
+                    return true;
+                case InventorCurveKind.Spline:
+                    await AddSplineAsync(sketchIndex, curve, ct).ConfigureAwait(false);
+                    return true;
                 default:
                     return false;
             }
+        }
+
+        // Authors an ellipse or elliptical arc: centre + major-axis direction + the two radii, and
+        // (for the arc) the sweep bounds. Radii are cm in the IR → millimetre expressions; angles
+        // are radians → degree expressions, the forms the host schema parses.
+        private async Task AddConicAsync(int sketchIndex, string kind, InventorCurve curve, CancellationToken ct)
+        {
+            var args = new Dictionary<string, object?>
+            {
+                ["sketchIndex"] = sketchIndex,
+                ["kind"] = kind,
+                ["points"] = new[] { curve.Center },
+                ["axis"] = curve.MajorAxis,
+                ["majorRadius"] = FeatureMapping.Millimeters(curve.MajorRadius),
+                ["minorRadius"] = FeatureMapping.Millimeters(curve.MinorRadius),
+            };
+            if (kind == "ellipticalArc")
+            {
+                args["startAngle"] = FeatureMapping.Degrees(curve.StartAngle);
+                args["endAngle"] = FeatureMapping.Degrees(curve.EndAngle);
+            }
+            if (curve.Construction)
+                args["construction"] = true;
+            await _bridge.CallToolAsync("add_sketch_entity", args, ct).ConfigureAwait(false);
+        }
+
+        // Authors a spline through its captured points. A FIT spline interpolates the points
+        // ("spline"); otherwise the points are control points ("controlPointSpline"). Closed marks a
+        // periodic loop. The points are the solved 2D positions, so the curve reproduces the region.
+        private async Task AddSplineAsync(int sketchIndex, InventorCurve curve, CancellationToken ct)
+        {
+            var args = new Dictionary<string, object?>
+            {
+                ["sketchIndex"] = sketchIndex,
+                ["kind"] = curve.Fit ? "spline" : "controlPointSpline",
+                ["points"] = curve.SplinePoints,
+                ["closed"] = curve.Closed,
+            };
+            if (curve.Construction)
+                args["construction"] = true;
+            await _bridge.CallToolAsync("add_sketch_entity", args, ct).ConfigureAwait(false);
         }
 
         private async Task AddEntityAsync(int sketchIndex, string kind, double[][] points, InventorCurve curve, string? radius, CancellationToken ct)
