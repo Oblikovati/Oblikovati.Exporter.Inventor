@@ -66,6 +66,13 @@ namespace Oblikovati.Exporter.Inventor.Model
         /// (the reader's region ordering is not predictable). Empty ⇒ fall back to the index.</summary>
         public System.Collections.Generic.IList<double[]> ProfileSeeds { get; } =
             new System.Collections.Generic.List<double[]>();
+
+        /// <summary>The feature's selected profile as Inventor resolved it (the loops of
+        /// Profile.ProfilePaths). When non-empty the emitter authors these loops into a dedicated
+        /// sketch and extrudes region 0 — faithful, and immune to the shared-sketch region ambiguity
+        /// that <see cref="ProfileSeeds"/> is subject to. Empty ⇒ fall back to sketch + seeds.</summary>
+        public System.Collections.Generic.IList<InventorProfileLoop> ProfileLoops { get; } =
+            new System.Collections.Generic.List<InventorProfileLoop>();
     }
 
     /// <summary>

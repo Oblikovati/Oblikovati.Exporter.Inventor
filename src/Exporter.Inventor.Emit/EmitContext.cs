@@ -83,6 +83,23 @@ namespace Oblikovati.Exporter.Inventor.Emit
         }
 
         /// <summary>
+        /// Authors a fresh, dedicated sketch for a feature's resolved profile loops on the plane of
+        /// IR sketch <paramref name="planeSketchIndex"/>, returning its host index. Not cached — each
+        /// feature gets its own profile sketch (the loops are that feature's, not the shared sketch).
+        /// Null ⇒ deferred (unmappable plane / unsupported curve).
+        /// </summary>
+        public async Task<int?> EmitProfileSketchAsync(int planeSketchIndex, IList<InventorProfileLoop> loops, CancellationToken ct)
+        {
+            if (planeSketchIndex < 0 || planeSketchIndex >= Document.Sketches.Count)
+                throw new InvalidOperationException($"feature references sketch {planeSketchIndex}, which does not exist.");
+            InventorSketch planeSketch = Document.Sketches[planeSketchIndex];
+            int? host = await _sketchEmitter.EmitProfileAsync(planeSketch, loops, Report.Deferrals, ct).ConfigureAwait(false);
+            if (host.HasValue)
+                Report.SketchesEmitted++;
+            return host;
+        }
+
+        /// <summary>
         /// Returns the host sketch index for the given IR sketch, authoring it on first use. Returns
         /// null when the sketch was deferred (unsupported plane/curve); the reason is on the report.
         /// </summary>

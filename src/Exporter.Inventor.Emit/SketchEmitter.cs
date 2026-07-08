@@ -16,7 +16,7 @@ namespace Oblikovati.Exporter.Inventor.Emit
     /// already the final solved positions, so the profile (and therefore the extruded volume) is
     /// correct; parametric editability is a later refinement.
     /// </summary>
-    internal sealed class SketchEmitter
+    public sealed class SketchEmitter
     {
         private readonly BridgeClient _bridge;
 
@@ -43,6 +43,33 @@ namespace Oblikovati.Exporter.Inventor.Emit
                 {
                     deferrals.Add($"sketch '{sketch.Name}' curve kind {curve.Kind} is not supported in this slice — deferred.");
                     return null;
+                }
+            }
+            return index;
+        }
+
+        /// <summary>
+        /// Authors a dedicated sketch on <paramref name="planeSketch"/>'s plane containing ONLY the
+        /// given profile loops (Inventor's resolved profile for one feature), returning the host
+        /// sketch index. Because the sketch holds exactly the profile geometry — no projected
+        /// reference geometry, no other features' curves — its regions ARE the feature's profile, so
+        /// a seed/index selects reliably. Returns null (a deferral) when the plane cannot be mapped
+        /// or a curve kind is unsupported.
+        /// </summary>
+        public async Task<int?> EmitProfileAsync(InventorSketch planeSketch, IList<InventorProfileLoop> loops, IList<string> deferrals, CancellationToken ct)
+        {
+            int? index = await CreateSketchHostAsync(planeSketch, deferrals, ct).ConfigureAwait(false);
+            if (!index.HasValue)
+                return null;
+            foreach (InventorProfileLoop loop in loops)
+            {
+                foreach (InventorCurve curve in loop.Curves)
+                {
+                    if (!await EmitCurveAsync(index.Value, curve, ct).ConfigureAwait(false))
+                    {
+                        deferrals.Add($"profile loop curve kind {curve.Kind} is not supported — deferred.");
+                        return null;
+                    }
                 }
             }
             return index;

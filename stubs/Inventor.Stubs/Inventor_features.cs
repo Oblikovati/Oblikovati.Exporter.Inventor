@@ -344,6 +344,10 @@ namespace Inventor
 
         public virtual object Curve => throw Stub.Error();
 
+        /// <summary>The underlying 2D sketch entity (a SketchLine / SketchArc / … typed object);
+        /// mapped to an IR curve when authoring the selected profile's loops.</summary>
+        public virtual object SketchEntity => throw Stub.Error();
+
         public virtual bool OpposedToSketchEntity => throw Stub.Error();
     }
 

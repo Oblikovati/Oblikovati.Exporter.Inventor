@@ -520,6 +520,10 @@ namespace Oblikovati.Exporter.Inventor.Inv
             }
 
             ir.Features.Add(feature);
+
+            // Author the exact selected profile loops (Profile.ProfilePaths) so the emitter can
+            // reproduce the precise boundary; ProfileSeeds/SketchIndex above stay as the fallback.
+            ProfileExtractor.Extract(ext, feature);
         }
 
         // One guaranteed-interior seed point (sketch cm) per region the feature's Profile

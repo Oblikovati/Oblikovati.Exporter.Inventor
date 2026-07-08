@@ -19,14 +19,21 @@ namespace Oblikovati.Exporter.Inventor.Emit
         public async Task<bool> EmitAsync(EmitContext context, InventorFeature feature, CancellationToken cancellationToken)
         {
             var extrude = (InventorExtrude)feature;
-            int? hostSketch = await context.EnsureSketchAsync(extrude.SketchIndex, cancellationToken).ConfigureAwait(false);
+
+            // Prefer authoring Inventor's ACTUAL resolved profile (its ProfilePaths) into a dedicated
+            // sketch: it excludes projected reference geometry and includes exactly the boundary, so
+            // the sketch's regions ARE the feature's profile and the seeds select reliably. Fall back
+            // to the whole shared sketch + seeds when no profile loops were captured.
+            bool useProfileLoops = extrude.ProfileLoops.Count > 0;
+            int? hostSketch = useProfileLoops
+                ? await context.EmitProfileSketchAsync(extrude.SketchIndex, extrude.ProfileLoops, cancellationToken).ConfigureAwait(false)
+                : await context.EnsureSketchAsync(extrude.SketchIndex, cancellationToken).ConfigureAwait(false);
             if (!hostSketch.HasValue)
                 return false; // sketch deferred; reason already on the report
 
-            // Prefer the host-side seed resolution (it runs on the SOLVED sketch, immune to the
-            // emitter's arc-region containment guess). Only when the IR carries no seed do we fall
-            // back to resolving a profile index emitter-side.
-            int profileIndex = extrude.ProfileSeeds.Count > 0
+            // Host-side seed resolution runs on the SOLVED sketch; when the IR carries no seed and no
+            // profile loops, fall back to resolving a profile index emitter-side.
+            int profileIndex = (useProfileLoops || extrude.ProfileSeeds.Count > 0)
                 ? extrude.ProfileIndex
                 : await ProfileResolver.ResolveAsync(context, extrude.SketchIndex, hostSketch.Value,
                     extrude.ProfileSeeds, extrude.ProfileIndex, cancellationToken).ConfigureAwait(false);

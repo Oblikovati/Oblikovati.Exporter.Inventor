@@ -85,24 +85,39 @@ namespace Oblikovati.Exporter.Inventor.Inv
                 // of the sketch's own profile, so skip it rather than dereferencing null.
                 SketchPoint start = line.StartSketchPoint;
                 SketchPoint end = line.EndSketchPoint;
-                if (start == null || end == null)
+                InventorCurve? curve = BuildLineCurve(line);
+                if (curve == null)
                 {
                     continue;
                 }
 
                 long id = nextId++;
-                result.Curves.Add(new InventorCurve
-                {
-                    Id = id,
-                    Kind = InventorCurveKind.Line,
-                    Start = P2(start.Geometry),
-                    End = P2(end.Geometry),
-                    Construction = line.Construction,
-                });
+                curve.Id = id;
+                result.Curves.Add(curve);
                 curveIds[line] = id;
                 pointRefs[start] = new InventorPointRef(id, InventorCurvePointRole.Start);
                 pointRefs[end] = new InventorPointRef(id, InventorCurvePointRole.End);
             }
+        }
+
+        // Builds the IR curve for one sketch line, or null when it should be skipped (a projected
+        // reference line with null Start/End sketch points). The caller assigns Id.
+        internal static InventorCurve? BuildLineCurve(SketchLine line)
+        {
+            SketchPoint start = line.StartSketchPoint;
+            SketchPoint end = line.EndSketchPoint;
+            if (start == null || end == null)
+            {
+                return null;
+            }
+
+            return new InventorCurve
+            {
+                Kind = InventorCurveKind.Line,
+                Start = P2(start.Geometry),
+                End = P2(end.Geometry),
+                Construction = line.Construction,
+            };
         }
 
         private static void ExtractCircles(
@@ -113,18 +128,22 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 SketchCircle circle = circles[i];
                 long id = nextId++;
-                result.Curves.Add(new InventorCurve
-                {
-                    Id = id,
-                    Kind = InventorCurveKind.Circle,
-                    Center = P2(circle.CenterSketchPoint.Geometry),
-                    Radius = circle.Radius,
-                    Construction = circle.Construction,
-                });
+                InventorCurve curve = BuildCircleCurve(circle);
+                curve.Id = id;
+                result.Curves.Add(curve);
                 curveIds[circle] = id;
                 pointRefs[circle.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
             }
         }
+
+        // Builds the IR curve for one sketch circle (caller assigns Id).
+        internal static InventorCurve BuildCircleCurve(SketchCircle circle) => new InventorCurve
+        {
+            Kind = InventorCurveKind.Circle,
+            Center = P2(circle.CenterSketchPoint.Geometry),
+            Radius = circle.Radius,
+            Construction = circle.Construction,
+        };
 
         private static void ExtractArcs(
             SketchArcs arcs, InventorSketch result,
@@ -134,22 +153,26 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 SketchArc arc = arcs[i];
                 long id = nextId++;
-                result.Curves.Add(new InventorCurve
-                {
-                    Id = id,
-                    Kind = InventorCurveKind.Arc,
-                    Center = P2(arc.CenterSketchPoint.Geometry),
-                    Start = P2(arc.StartSketchPoint.Geometry),
-                    End = P2(arc.EndSketchPoint.Geometry),
-                    Ccw = arc.SweepAngle > 0, // positive sweep = counter-clockwise start->end
-                    Construction = arc.Construction,
-                });
+                InventorCurve curve = BuildArcCurve(arc);
+                curve.Id = id;
+                result.Curves.Add(curve);
                 curveIds[arc] = id;
                 pointRefs[arc.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
                 pointRefs[arc.StartSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Start);
                 pointRefs[arc.EndSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.End);
             }
         }
+
+        // Builds the IR curve for one sketch arc (caller assigns Id).
+        internal static InventorCurve BuildArcCurve(SketchArc arc) => new InventorCurve
+        {
+            Kind = InventorCurveKind.Arc,
+            Center = P2(arc.CenterSketchPoint.Geometry),
+            Start = P2(arc.StartSketchPoint.Geometry),
+            End = P2(arc.EndSketchPoint.Geometry),
+            Ccw = arc.SweepAngle > 0, // positive sweep = counter-clockwise start->end
+            Construction = arc.Construction,
+        };
 
         private static void ExtractSplines(
             SketchSplines splines, InventorSketch result,
@@ -159,23 +182,36 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 SketchSpline spline = splines[i];
                 long id = nextId++;
-                var curve = new InventorCurve
-                {
-                    Id = id,
-                    Kind = InventorCurveKind.Spline,
-                    Closed = spline.Closed,
-                    Fit = true, // a SketchSpline interpolates its fit points
-                };
+                InventorCurve curve = BuildSplineCurve(spline);
+                curve.Id = id;
                 for (int j = 1; j <= spline.FitPointCount; j++)
                 {
                     SketchPoint fit = spline.get_FitPoint(j);
-                    curve.SplinePoints.Add(P2(fit.Geometry));
                     pointRefs[fit] = new InventorPointRef(id, InventorCurvePointRole.SplinePoint, j - 1);
                 }
 
                 result.Curves.Add(curve);
                 curveIds[spline] = id;
             }
+        }
+
+        // Builds the IR curve for one fit-point sketch spline, populating its SplinePoints from the
+        // fit points (caller assigns Id and registers each fit point's InventorPointRef).
+        internal static InventorCurve BuildSplineCurve(SketchSpline spline)
+        {
+            var curve = new InventorCurve
+            {
+                Kind = InventorCurveKind.Spline,
+                Closed = spline.Closed,
+                Fit = true, // a SketchSpline interpolates its fit points
+            };
+            for (int j = 1; j <= spline.FitPointCount; j++)
+            {
+                SketchPoint fit = spline.get_FitPoint(j);
+                curve.SplinePoints.Add(P2(fit.Geometry));
+            }
+
+            return curve;
         }
 
         private static void ExtractControlPointSplines(
@@ -186,23 +222,36 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 SketchControlPointSpline spline = splines[i];
                 long id = nextId++;
-                var curve = new InventorCurve
-                {
-                    Id = id,
-                    Kind = InventorCurveKind.Spline,
-                    Closed = spline.IsClosed,
-                    Fit = false, // a control-point spline is a control polygon, not interpolating
-                };
+                InventorCurve curve = BuildControlPointSplineCurve(spline);
+                curve.Id = id;
                 for (int j = 1; j <= spline.ControlPointCount; j++)
                 {
                     SketchPoint control = spline.get_ControlPoint(j);
-                    curve.SplinePoints.Add(P2(control.Geometry));
                     pointRefs[control] = new InventorPointRef(id, InventorCurvePointRole.SplinePoint, j - 1);
                 }
 
                 result.Curves.Add(curve);
                 curveIds[spline] = id;
             }
+        }
+
+        // Builds the IR curve for one control-point sketch spline, populating its SplinePoints from
+        // the control points (caller assigns Id and registers each control point's InventorPointRef).
+        internal static InventorCurve BuildControlPointSplineCurve(SketchControlPointSpline spline)
+        {
+            var curve = new InventorCurve
+            {
+                Kind = InventorCurveKind.Spline,
+                Closed = spline.IsClosed,
+                Fit = false, // a control-point spline is a control polygon, not interpolating
+            };
+            for (int j = 1; j <= spline.ControlPointCount; j++)
+            {
+                SketchPoint control = spline.get_ControlPoint(j);
+                curve.SplinePoints.Add(P2(control.Geometry));
+            }
+
+            return curve;
         }
 
         private static void ExtractEllipses(
@@ -213,20 +262,27 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 SketchEllipse ellipse = ellipses[i];
                 long id = nextId++;
-                UnitVector2d major = ellipse.MajorAxisVector;
-                result.Curves.Add(new InventorCurve
-                {
-                    Id = id,
-                    Kind = InventorCurveKind.Ellipse,
-                    Center = P2(ellipse.CenterSketchPoint.Geometry),
-                    MajorAxis = new[] { major.X, major.Y },
-                    MajorRadius = ellipse.MajorRadius,
-                    MinorRadius = ellipse.MinorRadius,
-                    Construction = ellipse.Construction,
-                });
+                InventorCurve curve = BuildEllipseCurve(ellipse);
+                curve.Id = id;
+                result.Curves.Add(curve);
                 curveIds[ellipse] = id;
                 pointRefs[ellipse.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
             }
+        }
+
+        // Builds the IR curve for one full sketch ellipse (caller assigns Id).
+        internal static InventorCurve BuildEllipseCurve(SketchEllipse ellipse)
+        {
+            UnitVector2d major = ellipse.MajorAxisVector;
+            return new InventorCurve
+            {
+                Kind = InventorCurveKind.Ellipse,
+                Center = P2(ellipse.CenterSketchPoint.Geometry),
+                MajorAxis = new[] { major.X, major.Y },
+                MajorRadius = ellipse.MajorRadius,
+                MinorRadius = ellipse.MinorRadius,
+                Construction = ellipse.Construction,
+            };
         }
 
         private static void ExtractEllipticalArcs(
@@ -237,28 +293,35 @@ namespace Oblikovati.Exporter.Inventor.Inv
             {
                 SketchEllipticalArc arc = arcs[i];
                 long id = nextId++;
-                UnitVector2d major = arc.MajorAxisVector;
-                result.Curves.Add(new InventorCurve
-                {
-                    Id = id,
-                    Kind = InventorCurveKind.EllipticalArc,
-                    Center = P2(arc.CenterSketchPoint.Geometry),
-                    // The endpoints are the source of truth for closure: the emitter derives the
-                    // parametric angles FROM them (not from Inventor's StartAngle/SweepAngle, whose
-                    // convention need not match the host's), so the host reproduces exactly these
-                    // points and the loop welds to the adjacent curves.
-                    Start = P2(arc.StartSketchPoint.Geometry),
-                    End = P2(arc.EndSketchPoint.Geometry),
-                    MajorAxis = new[] { major.X, major.Y },
-                    MajorRadius = arc.MajorRadius,
-                    MinorRadius = arc.MinorRadius,
-                    StartAngle = arc.StartAngle,
-                    EndAngle = arc.StartAngle + arc.SweepAngle, // sign encodes sweep direction (CCW/CW)
-                    Construction = arc.Construction,
-                });
+                InventorCurve curve = BuildEllipticalArcCurve(arc);
+                curve.Id = id;
+                result.Curves.Add(curve);
                 curveIds[arc] = id;
                 pointRefs[arc.CenterSketchPoint] = new InventorPointRef(id, InventorCurvePointRole.Center);
             }
+        }
+
+        // Builds the IR curve for one sketch elliptical arc (caller assigns Id).
+        internal static InventorCurve BuildEllipticalArcCurve(SketchEllipticalArc arc)
+        {
+            UnitVector2d major = arc.MajorAxisVector;
+            return new InventorCurve
+            {
+                Kind = InventorCurveKind.EllipticalArc,
+                Center = P2(arc.CenterSketchPoint.Geometry),
+                // The endpoints are the source of truth for closure: the emitter derives the
+                // parametric angles FROM them (not from Inventor's StartAngle/SweepAngle, whose
+                // convention need not match the host's), so the host reproduces exactly these
+                // points and the loop welds to the adjacent curves.
+                Start = P2(arc.StartSketchPoint.Geometry),
+                End = P2(arc.EndSketchPoint.Geometry),
+                MajorAxis = new[] { major.X, major.Y },
+                MajorRadius = arc.MajorRadius,
+                MinorRadius = arc.MinorRadius,
+                StartAngle = arc.StartAngle,
+                EndAngle = arc.StartAngle + arc.SweepAngle, // sign encodes sweep direction (CCW/CW)
+                Construction = arc.Construction,
+            };
         }
 
         // Reads the orientation/relation constraints (coincidence is already inferred). A handled
