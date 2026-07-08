@@ -74,6 +74,15 @@ namespace Oblikovati.Exporter.Inventor.Inv
         private static void ExtractPart(PartDocument part, InventorDocument ir, ExportReport report)
         {
             ExtractUserParameters(part, ir);
+            // A sheet-metal part's solid is built from face/flange/bend features the normal
+            // extractors don't read (it would export empty), so model its flat pattern as an
+            // extrude of the sheet thickness instead — volume-faithful (material is conserved).
+            if (part.ComponentDefinition is SheetMetalComponentDefinition sheet)
+            {
+                SheetMetalExtractor.Extract(sheet, ir);
+                return;
+            }
+
             SketchExtractor.Extract(part, ir, report);
             FeatureExtractor.Extract(part, ir);
         }

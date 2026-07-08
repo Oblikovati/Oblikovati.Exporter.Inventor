@@ -685,7 +685,7 @@ namespace Oblikovati.Exporter.Inventor.Inv
 
         // A datum carries no preferred in-plane axes, so pick an arbitrary orthonormal pair:
         // X perpendicular to the normal, Y = normal × X.
-        private static (double[] X, double[] Y) AxesFromNormal(UnitVector normal)
+        internal static (double[] X, double[] Y) AxesFromNormal(UnitVector normal)
         {
             double[] n = V(normal);
             double[] seed = Math.Abs(n[0]) < 0.9 ? new double[] { 1, 0, 0 } : new double[] { 0, 1, 0 };
