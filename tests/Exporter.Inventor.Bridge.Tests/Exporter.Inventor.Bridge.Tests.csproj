@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- CI-safe unit tests for the Bridge client's pure logic (result selection, error
+       surfacing, physical-property parsing, option defaults). No live bridge required, so
+       these run in CI. The live end-to-end round trip lives in tools/BridgeSmoke instead. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Bridge.Tests</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.Inventor.Bridge.Tests</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Bridge\Exporter.Inventor.Bridge.csproj" />
+  </ItemGroup>
+
+</Project>

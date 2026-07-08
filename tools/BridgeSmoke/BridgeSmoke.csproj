@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Live acceptance driver for the MCP bridge client. Deliberately NOT part of the root
+       solution (Oblikovati.Exporter.Inventor.slnx): it requires a running bridge on
+       127.0.0.1:7800, which CI has no way to provide, so keeping it out of the solution
+       keeps `dotnet build`/`dotnet test` green in CI. Run it by path against a live host. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Targets the runtime installed on the bridge test host (.NET 10). This project is
+         outside the root solution, so its TFM never touches CI's .NET 8 build. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Oblikovati.Exporter.Inventor.Tools.BridgeSmoke</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Exporter.Inventor.Bridge\Exporter.Inventor.Bridge.csproj" />
+    <!-- Pull the MCP client's full runtime closure into this app's output. The Bridge project
+         is netstandard2.0, so some of the SDK's transitive runtime deps (e.g.
+         Microsoft.Bcl.AsyncInterfaces) do not otherwise flow into a net8.0 app's deps.json. -->
+    <PackageReference Include="ModelContextProtocol.Core" Version="1.4.0" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" />
+  </ItemGroup>
+
+  <!-- The Bridge assembly is netstandard2.0 and binds the Microsoft.Bcl.AsyncInterfaces
+       facade; force every restored runtime assembly into the output so the facade is present. -->
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+</Project>
