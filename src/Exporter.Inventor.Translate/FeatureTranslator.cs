@@ -86,8 +86,10 @@ namespace Oblikovati.Exporter.Inventor.Translate
 
         private static FeatureData TranslateRevolve(InventorRevolve revolve)
         {
-            // Own-centerline mode: the profile sketch carries the axis as a centerline, so no
-            // axis fields are emitted. Angle 0 (full revolution) is left unset.
+            // Name the revolve's own injected centerline (axisSketch is 1-based; the centerline lives
+            // in the profile sketch) so a sketch shared by several revolves is unambiguous. -1 ⇒
+            // own-centerline mode, no axis fields. Angle 0 (full revolution) is left unset.
+            bool hasAxis = revolve.AxisLineIndex >= 0;
             var payload = new RevolveData
             {
                 Sketch = revolve.SketchIndex,
@@ -95,6 +97,8 @@ namespace Oblikovati.Exporter.Inventor.Translate
                 ProfilePoint = revolve.ProfileSeeds.Count > 0 ? (double[])revolve.ProfileSeeds[0].Clone() : null,
                 Operation = OperationName(revolve.Operation),
                 Angle = revolve.AngleRadians != 0 ? revolve.AngleRadians : (double?)null,
+                AxisSketch = hasAxis ? revolve.SketchIndex + 1 : (int?)null,
+                AxisLine = hasAxis ? revolve.AxisLineIndex : (int?)null,
             };
             return new FeatureData { Kind = "revolve", Name = NameOf(revolve), Revolve = payload };
         }

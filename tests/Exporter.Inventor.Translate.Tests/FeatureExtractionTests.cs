@@ -91,8 +91,37 @@ namespace Oblikovati.Exporter.Inventor.Tests
             InventorRevolve revolve = Assert.IsType<InventorRevolve>(Assert.Single(ir.Features));
             Assert.Equal(0, revolve.SketchIndex);
             Assert.Equal(0, revolve.AngleRadians); // full sweep
-            // The axis was added to the profile sketch as a centerline curve.
+            // The axis was added to the profile sketch as a centerline curve, and the revolve names
+            // that centerline by its line index so the axis is unambiguous.
             Assert.Contains(ir.Sketches[0].Curves, c => c.Centerline);
+            Assert.True(revolve.AxisLineIndex >= 0);
+        }
+
+        [Fact]
+        public void Two_revolves_sharing_a_sketch_name_distinct_axis_centerlines()
+        {
+            // Both revolves build off the same "Square" sketch, so each injects its own centerline;
+            // they must reference DIFFERENT line indices, else the reader can't tell the axes apart
+            // ("ambiguous axis — the sketch has multiple centerlines").
+            var revolves = new List<RevolveFeature>
+            {
+                new FakeRevolveFeature("Revolve1", "Square", FakeSketchLine.From(0, 0, 0, 4)),
+                new FakeRevolveFeature("Revolve2", "Square", FakeSketchLine.From(1, 0, 1, 4)),
+            };
+
+            InventorDocument ir = Extract(new List<ExtrudeFeature>(), new List<WorkPlane>(), revolves);
+
+            var emitted = new List<InventorRevolve>();
+            foreach (InventorFeature f in ir.Features)
+            {
+                emitted.Add(Assert.IsType<InventorRevolve>(f));
+            }
+
+            Assert.Equal(2, emitted.Count);
+            Assert.Equal(2, System.Linq.Enumerable.Count(ir.Sketches[0].Curves, c => c.Centerline));
+            Assert.True(emitted[0].AxisLineIndex >= 0);
+            Assert.True(emitted[1].AxisLineIndex >= 0);
+            Assert.NotEqual(emitted[0].AxisLineIndex, emitted[1].AxisLineIndex);
         }
     }
 }
