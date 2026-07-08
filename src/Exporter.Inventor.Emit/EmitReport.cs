@@ -27,5 +27,25 @@ namespace Oblikovati.Exporter.Inventor.Emit
         /// Distinct from a deferral: the feature exists in the model, so it shapes the volume — a warning
         /// flags that its geometry may be wrong (e.g. a hole that missed material).</summary>
         public IList<string> Warnings { get; } = new List<string>();
+
+        /// <summary>Per-feature running volume (cm³) captured after each feature, when volume tracing is
+        /// requested (see <see cref="DocumentEmitter.EmitAsync"/>'s traceVolumes). Empty otherwise. Used
+        /// to localize which feature makes Oblikovati's volume diverge from Inventor's.</summary>
+        public IList<FeatureVolume> VolumeTrace { get; } = new List<FeatureVolume>();
+    }
+
+    /// <summary>One row of a volume trace: the running solid volume (cm³) right after a feature emitted.</summary>
+    public sealed class FeatureVolume
+    {
+        public int Index { get; set; }
+
+        public string Kind { get; set; } = string.Empty;
+
+        public string Name { get; set; } = string.Empty;
+
+        public bool Emitted { get; set; }
+
+        /// <summary>Running body volume in cm³ after this feature; NaN when unreadable (no body yet).</summary>
+        public double VolumeCm3 { get; set; }
     }
 }

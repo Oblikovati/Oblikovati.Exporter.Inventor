@@ -46,7 +46,7 @@ namespace Oblikovati.Exporter.Inventor.Emit
         /// Creates a fresh part document (its name defaults to a unique name derived from the IR
         /// display name) and emits the document's features, returning what was built and deferred.
         /// </summary>
-        public async Task<EmitReport> EmitAsync(BridgeClient bridge, InventorDocument document, string? documentName = null, CancellationToken cancellationToken = default)
+        public async Task<EmitReport> EmitAsync(BridgeClient bridge, InventorDocument document, string? documentName = null, CancellationToken cancellationToken = default, bool traceVolumes = false)
         {
             if (bridge == null) throw new ArgumentNullException(nameof(bridge));
             if (document == null) throw new ArgumentNullException(nameof(document));
@@ -60,21 +60,44 @@ namespace Oblikovati.Exporter.Inventor.Emit
                 // Track the IR feature index so a created feature's host name is recorded against it
                 // (a later pattern/mirror references its sources by IR index).
                 context.CurrentFeatureIndex = i;
-                await EmitFeatureAsync(context, document.Features[i], report, cancellationToken).ConfigureAwait(false);
+                InventorFeature feature = document.Features[i];
+                bool emitted = await EmitFeatureAsync(context, feature, report, cancellationToken).ConfigureAwait(false);
+                if (traceVolumes)
+                    report.VolumeTrace.Add(await CaptureVolumeAsync(bridge, i, feature, emitted, cancellationToken).ConfigureAwait(false));
             }
             return report;
         }
 
-        private async Task EmitFeatureAsync(EmitContext context, InventorFeature feature, EmitReport report, CancellationToken ct)
+        private async Task<bool> EmitFeatureAsync(EmitContext context, InventorFeature feature, EmitReport report, CancellationToken ct)
         {
             IFeatureEmitter? emitter = FindEmitter(feature);
             if (emitter == null)
             {
                 report.Deferrals.Add($"feature '{feature.Name}' of kind {feature.GetType().Name} is not supported in this slice — deferred.");
-                return;
+                return false;
             }
-            if (await emitter.EmitAsync(context, feature, ct).ConfigureAwait(false))
+            bool emitted = await emitter.EmitAsync(context, feature, ct).ConfigureAwait(false);
+            if (emitted)
                 report.FeaturesEmitted++;
+            return emitted;
+        }
+
+        // Reads the running body volume right after a feature emitted, for the per-feature divergence
+        // trace. NaN when there is no body yet or the reply is unreadable.
+        private static async Task<FeatureVolume> CaptureVolumeAsync(BridgeClient bridge, int index, InventorFeature feature, bool emitted, CancellationToken ct)
+        {
+            double volume = double.NaN;
+            System.Text.Json.JsonElement props = await bridge.CallToolAsync("get_physical_properties", null, ct).ConfigureAwait(false);
+            if (PhysicalProperties.TryReadVolumeCm3(props, out double v))
+                volume = v;
+            return new FeatureVolume
+            {
+                Index = index,
+                Kind = feature.GetType().Name,
+                Name = feature.Name,
+                Emitted = emitted,
+                VolumeCm3 = volume,
+            };
         }
 
         private IFeatureEmitter? FindEmitter(InventorFeature feature)
