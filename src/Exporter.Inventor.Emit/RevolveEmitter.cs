@@ -35,8 +35,10 @@ namespace Oblikovati.Exporter.Inventor.Emit
             if (!hostSketch.HasValue)
                 return false; // sketch deferred; reason already on the report
 
-            int profileIndex = await ProfileResolver.ResolveAsync(context, revolve.SketchIndex, hostSketch.Value,
-                revolve.ProfileSeeds, revolve.ProfileIndex, cancellationToken).ConfigureAwait(false);
+            int profileIndex = revolve.ProfileSeeds.Count > 0
+                ? revolve.ProfileIndex
+                : await ProfileResolver.ResolveAsync(context, revolve.SketchIndex, hostSketch.Value,
+                    revolve.ProfileSeeds, revolve.ProfileIndex, cancellationToken).ConfigureAwait(false);
             await context.AddFeatureAsync("revolve", RevolveArgs(hostSketch.Value, profileIndex, revolve, axisRef), cancellationToken).ConfigureAwait(false);
             return true;
         }
@@ -71,8 +73,9 @@ namespace Oblikovati.Exporter.Inventor.Emit
             return null;
         }
 
-        private static Dictionary<string, object?> RevolveArgs(int sketchIndex, int profileIndex, InventorRevolve revolve, string axisRef) =>
-            new Dictionary<string, object?>
+        private static Dictionary<string, object?> RevolveArgs(int sketchIndex, int profileIndex, InventorRevolve revolve, string axisRef)
+        {
+            var args = new Dictionary<string, object?>
             {
                 ["sketchIndex"] = sketchIndex,
                 ["profileIndex"] = profileIndex,
@@ -80,5 +83,11 @@ namespace Oblikovati.Exporter.Inventor.Emit
                 ["angle"] = FeatureMapping.RevolveAngle(revolve.AngleRadians),
                 ["operation"] = FeatureMapping.Operation(revolve.Operation),
             };
+            // The interior seed (first, one region per revolve) selects the region host-side on the
+            // solved sketch, preferred over profileIndex.
+            if (revolve.ProfileSeeds.Count > 0)
+                args["profileSeed"] = revolve.ProfileSeeds[0];
+            return args;
+        }
     }
 }

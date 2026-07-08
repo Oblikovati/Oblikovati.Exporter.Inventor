@@ -23,8 +23,13 @@ namespace Oblikovati.Exporter.Inventor.Emit
             if (!hostSketch.HasValue)
                 return false; // sketch deferred; reason already on the report
 
-            int profileIndex = await ProfileResolver.ResolveAsync(context, extrude.SketchIndex, hostSketch.Value,
-                extrude.ProfileSeeds, extrude.ProfileIndex, cancellationToken).ConfigureAwait(false);
+            // Prefer the host-side seed resolution (it runs on the SOLVED sketch, immune to the
+            // emitter's arc-region containment guess). Only when the IR carries no seed do we fall
+            // back to resolving a profile index emitter-side.
+            int profileIndex = extrude.ProfileSeeds.Count > 0
+                ? extrude.ProfileIndex
+                : await ProfileResolver.ResolveAsync(context, extrude.SketchIndex, hostSketch.Value,
+                    extrude.ProfileSeeds, extrude.ProfileIndex, cancellationToken).ConfigureAwait(false);
             await context.AddFeatureAsync("extrude", ExtrudeArgs(hostSketch.Value, profileIndex, extrude), cancellationToken).ConfigureAwait(false);
             return true;
         }
@@ -39,6 +44,10 @@ namespace Oblikovati.Exporter.Inventor.Emit
                 ["extent"] = FeatureMapping.Extent(extrude.ExtentKind),
                 ["direction"] = FeatureMapping.Direction(extrude.Direction),
             };
+            // Interior seed point(s) select the region(s) on the solved sketch (host-side), the
+            // stable selector; the host prefers these over profileIndex.
+            if (extrude.ProfileSeeds.Count > 0)
+                args["profileSeeds"] = extrude.ProfileSeeds;
             if (extrude.ExtentKind == InventorExtentKind.Distance)
                 args["distance"] = FeatureMapping.Millimeters(extrude.Distance);
             if (Math.Abs(extrude.TaperRadians) > 1e-9)
