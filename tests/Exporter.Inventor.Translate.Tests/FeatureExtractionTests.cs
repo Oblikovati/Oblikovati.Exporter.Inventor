@@ -42,6 +42,37 @@ namespace Oblikovati.Exporter.Inventor.Tests
         }
 
         [Fact]
+        public void Skips_the_seed_of_a_degenerate_zero_area_profile_path()
+        {
+            // Inventor can include a near-zero-area sliver among a profile's material paths. Its
+            // interior seed would land on the sliver, which lies inside a large enclosing region in
+            // the reader, ballooning the recomputed volume — so no seed is emitted for it. Here a real
+            // unit square + a 1e-6-wide sliver ⇒ exactly one seed.
+            var square = new FakeProfilePath(true, new List<ProfileEntity>
+            {
+                new FakeProfileEntity(0, 0), new FakeProfileEntity(1, 0),
+                new FakeProfileEntity(1, 1), new FakeProfileEntity(0, 1),
+            });
+            var sliver = new FakeProfilePath(true, new List<ProfileEntity>
+            {
+                new FakeProfileEntity(0, 5), new FakeProfileEntity(1, 5),
+                new FakeProfileEntity(1, 5.000001), new FakeProfileEntity(0, 5.000001),
+            });
+            var extrudes = new List<ExtrudeFeature>
+            {
+                new FakeExtrudeFeature(
+                    "Extrude1", PartFeatureOperationEnum.kNewBodyOperation, "Square",
+                    new FakeDistanceExtent(5, PartFeatureExtentDirectionEnum.kPositiveExtentDirection),
+                    new List<ProfilePath> { square, sliver }),
+            };
+
+            InventorDocument ir = Extract(extrudes, new List<WorkPlane>());
+
+            InventorExtrude extrude = Assert.IsType<InventorExtrude>(Assert.Single(ir.Features));
+            Assert.Single(extrude.ProfileSeeds); // the square's; the sliver contributes none
+        }
+
+        [Fact]
         public void Extracts_a_through_all_cut_extrude()
         {
             // Regression: through-all cuts were dropped (only DistanceExtent was read), so

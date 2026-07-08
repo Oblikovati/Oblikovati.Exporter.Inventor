@@ -542,10 +542,21 @@ namespace Oblikovati.Exporter.Inventor.Inv
             foreach (ProfilePath path in profile)
             {
                 List<double[]> poly = LoopPolygon(path);
-                if (poly.Count >= 3)
+                if (poly.Count < 3)
                 {
-                    (path.AddsMaterial ? outers : holes).Add(poly);
+                    continue;
                 }
+
+                // A degenerate (near-zero-area) outer is not a real material region — Inventor can
+                // include such a sliver path in a selected profile. Its interior seed would land on
+                // the sliver, which lies inside a large enclosing region in the reader, so the reader
+                // would fill that whole region and balloon the volume (TapePath: +1090%). Skip it.
+                if (path.AddsMaterial && PolygonArea(poly) < MinRegionAreaCm2)
+                {
+                    continue;
+                }
+
+                (path.AddsMaterial ? outers : holes).Add(poly);
             }
 
             foreach (List<double[]> outer in outers)
@@ -565,6 +576,24 @@ namespace Oblikovati.Exporter.Inventor.Inv
                     yield return seed;
                 }
             }
+        }
+
+        // Smallest area (cm²) an outer profile path must enclose to count as a real material
+        // region. Below this it is a degenerate sliver whose seed would mis-resolve; genuine small
+        // regions in the corpus are ~4e-3 cm², well above this floor.
+        private const double MinRegionAreaCm2 = 1e-4;
+
+        // The unsigned area of a closed polygon (shoelace), used to reject degenerate outers.
+        private static double PolygonArea(List<double[]> poly)
+        {
+            double sum = 0;
+            for (int i = 0, n = poly.Count; i < n; i++)
+            {
+                double[] a = poly[i], b = poly[(i + 1) % n];
+                sum += a[0] * b[1] - b[0] * a[1];
+            }
+
+            return System.Math.Abs(sum) / 2.0;
         }
 
         // A ProfilePath's loop as a polygon of its entities' start points (sketch cm). Straight
